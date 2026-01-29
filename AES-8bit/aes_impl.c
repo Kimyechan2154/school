@@ -1,37 +1,44 @@
+#define _CRT_SECURE_NO_WARNINGS
+
 #include <stdio.h>
-#include <stdint.h>
+#include <stdint.h> //8비트 정수 사용을 위함
 
-// 1. 자료형 및 상수 정의 (Basic Definitions)
-// uint8_t를 'byte'로 정의하여 가독성 향상 및 1바이트 단위 명시
-typedef uint8_t byte;
+typedef uint8_t byte; //8비트 부호없는 정수형을 byte로 정의
 
-#define BLOCK_SIZE 16 // AES 블록 크기 (128비트 = 16바이트)
-#define ROUNDS 10     // AES-128 라운드 수
+#define AES_BLOCK_SIZE 16 // AES 블록 크기 (16바이트)
+#define AES_ROUND_SIZE 16 //각 라운드 키 크기 (16바이트)
+#define AES_KEY_SIZE 16 // AES 키 크기 (16바이트, 128비트)
 
-// -------------------------------------------------------------------------
-// 2. 핵심 함수 선언 (Function Declarations)
-// state[16]: 4x4 행렬 대신 1차원 배열 사용 (구현 및 반복문 효율성 위해)
-// -------------------------------------------------------------------------
-
-// S-Box를 이용한 1:1 바이트 치환
 void SubBytes(byte state[16]) {
-    // TODO: S-Box Lookup Table을 이용한 치환 구현 예정
+
+	// SubBytes 함수 구현 (예: S-Box 변환)
 }
 
-// 행(Row) 단위 이동 (Shift)
 void ShiftRows(byte state[16]) {
-    // TODO: 각 행별 좌측 Shift 연산 구현 예정
+	// ShiftRows 함수 구현
 }
 
-// 열(Column) 단위 섞기 (Mix)
-void MixColumns(byte state[16]) {
-    // TODO: Galois Field 곱셈을 이용한 열 혼합 구현 예정
+void MixColumns(byte state[16]) { 
+	// MixColumns 함수 구현
 }
 
-// 라운드 키와 XOR 연산 (Key Mixing)
-// 이 함수는 연산이 단순하므로 선언과 동시에 구현함
-void AddRoundKey(byte state[16], const byte roundKey[16]) {
-    for (int i = 0; i < BLOCK_SIZE; i++) {
-        state[i] ^= roundKey[i]; // XOR 연산 (같으면 0, 다르면 1)
-    }
+void AddRoundKey(byte state[16], byte roundKey[16]) {
+	for (int i = 0; i < AES_BLOCK_SIZE; i++) {
+		state[i] ^= roundKey[i]; // 라운드 키와 상태를 XOR 연산
+	}
+}
+
+void AES_Encrypt(byte input[16], byte roundKeys[176]) {
+
+	AddRoundKey(input, roundKeys); // 초기 라운드 키 추가
+
+	for (int round = 1; round <= 9; round++) {
+		SubBytes(input);
+		ShiftRows(input);
+		MixColumns(input); //// 10라운드 까지만
+		AddRoundKey(input, &roundKeys[round * AES_ROUND_SIZE]);	
+	}
+	SubBytes(input);
+	ShiftRows(input);
+	AddRoundKey(input, &roundKeys[10 * AES_ROUND_SIZE]); // 마지막 라운드 키 추가
 }
