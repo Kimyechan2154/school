@@ -30,12 +30,35 @@ const byte sbox[256] = {
 };
 
 void SubBytes(byte state[16]) {
-
-	// SubBytes 함수 구현 (예: S-Box 변환)
+	for (int i = 0; i < 16; i++) 
+	{
+		state[i] = sbox[state[i]]; 
+	}
 }
 
 void ShiftRows(byte state[16]) {
-	// ShiftRows 함수 구현
+	
+
+	byte temp;
+	// 2번째 행 시프트
+	temp = state[1];
+	state[1] = state[5];
+	state[5] = state[9];
+	state[9] = state[13];
+	state[13] = temp;
+	// 3번째 행 시프트
+	temp = state[2];
+	byte temp2 = state[6];
+	state[2] = state[10];
+	state[6] = state[14];
+	state[10] = temp;
+	state[14] = temp2;
+	// 4번째 행 시프트
+	temp = state[3];
+	state[3] = state[15];
+	state[15] = state[11];
+	state[11] = state[7];
+	state[7] = temp;
 }
 
 void MixColumns(byte state[16]) { 
