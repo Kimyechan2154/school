@@ -1,15 +1,16 @@
 #define _CRT_SECURE_NO_WARNINGS
 
 #include <stdio.h>
-#include <stdint.h> //8비트 정수 사용을 위함
+#include <stdint.h> 
 
-typedef uint8_t byte; //8비트 부호없는 정수형을 byte로 정의
+typedef uint8_t byte;
 
-#define AES_BLOCK_SIZE 16 // AES 블록 크기 (16바이트)
-#define AES_ROUND_SIZE 16 //각 라운드 키 크기 (16바이트)
-#define AES_KEY_SIZE 16 // AES 키 크기 (16바이트, 128비트)
+// [피드백 1 반영] 상수 활용을 위해 정의 확인
+#define AES_BLOCK_SIZE 16 
+#define AES_KEY_SIZE 16   
+#define AES_ROUNDS 10     // 라운드 수 (10라운드)
 
-// AES 표준 S-Box (값 변경 방지를 위해 const 사용)
+// AES 표준 S-Box
 const byte sbox[256] = {
 	0x63, 0x7c, 0x77, 0x7b, 0xf2, 0x6b, 0x6f, 0xc5, 0x30, 0x01, 0x67, 0x2b, 0xfe, 0xd7, 0xab, 0x76,
 	0xca, 0x82, 0xc9, 0x7d, 0xfa, 0x59, 0x47, 0xf0, 0xad, 0xd4, 0xa2, 0xaf, 0x9c, 0xa4, 0x72, 0xc0,
@@ -29,31 +30,31 @@ const byte sbox[256] = {
 	0x8c, 0xa1, 0x89, 0x0d, 0xbf, 0xe6, 0x42, 0x68, 0x41, 0x99, 0x2d, 0x0f, 0xb0, 0x54, 0xbb, 0x16
 };
 
+// xtime 매크로 (MixColumns용)
+#define xtime(x)   ((x << 1) ^ (((x >> 7) & 1) * 0x1b))
+
 void SubBytes(byte state[16]) {
-	for (int i = 0; i < 16; i++) 
-	{
-		state[i] = sbox[state[i]]; 
+	// [피드백 3 & 1 반영] i 대신 byte_idx 사용, 16 대신 AES_BLOCK_SIZE 사용
+	for (int byte_idx = 0; byte_idx < AES_BLOCK_SIZE; byte_idx++) {
+		state[byte_idx] = sbox[state[byte_idx]]; 
 	}
 }
 
 void ShiftRows(byte state[16]) {
-	
-
 	byte temp;
-	// 2번째 행 시프트
+
+	// 1행 (왼쪽 1칸)
 	temp = state[1];
 	state[1] = state[5];
 	state[5] = state[9];
 	state[9] = state[13];
 	state[13] = temp;
-	// 3번째 행 시프트
-	temp = state[2];
-	byte temp2 = state[6];
-	state[2] = state[10];
-	state[6] = state[14];
-	state[10] = temp;
-	state[14] = temp2;
-	// 4번째 행 시프트
+
+	// 2행 (왼쪽 2칸)
+	temp = state[2]; state[2] = state[10]; state[10] = temp;
+	temp = state[6]; state[6] = state[14]; state[14] = temp;
+
+	// 3행 (왼쪽 3칸)
 	temp = state[3];
 	state[3] = state[15];
 	state[15] = state[11];
@@ -61,28 +62,49 @@ void ShiftRows(byte state[16]) {
 	state[7] = temp;
 }
 
-void MixColumns(byte state[16]) { 
-	// MixColumns 함수 구현
-}
+void MixColumns(byte state[16]) {
+	byte tmp, tm, t;
 
-void AddRoundKey(byte state[16], byte roundKey[16]) {
-	for (int i = 0; i < AES_BLOCK_SIZE; i++) {
-		state[i] ^= roundKey[i]; // 라운드 키와 상태를 XOR 연산
+	// [피드백 3 반영] 4칸씩 점프하므로 col_idx(열 인덱스) 같은 이름도 좋으나, 
+	// 여기서는 관습적으로 i를 많이 쓰긴 합니다. 하지만 원칙대로 바꿉니다.
+	for (int col_idx = 0; col_idx < AES_BLOCK_SIZE; col_idx += 4) {
+		t = state[col_idx];
+		tmp = state[col_idx] ^ state[col_idx + 1] ^ state[col_idx + 2] ^ state[col_idx + 3];
+
+		tm = state[col_idx] ^ state[col_idx + 1]; tm = xtime(tm); state[col_idx] ^= tm ^ tmp;
+		tm = state[col_idx + 1] ^ state[col_idx + 2]; tm = xtime(tm); state[col_idx + 1] ^= tm ^ tmp;
+		tm = state[col_idx + 2] ^ state[col_idx + 3]; tm = xtime(tm); state[col_idx + 2] ^= tm ^ tmp;
+		tm = state[col_idx + 3] ^ t;            tm = xtime(tm); state[col_idx + 3] ^= tm ^ tmp;
 	}
 }
 
-void AES_Encrypt(byte input[16], byte roundKeys[176]) {
+// [피드백 2 반영 준비] AddRoundKey는 한 라운드 키(16바이트)만 받으면 됩니다.
+void AddRoundKey(byte state[16], byte roundKey[16]) {
+	// [피드백 3 반영] byte_idx 사용
+	for (int byte_idx = 0; byte_idx < AES_BLOCK_SIZE; byte_idx++) {
+		state[byte_idx] ^= roundKey[byte_idx];
+	}
+}
 
-	AddRoundKey(input, roundKeys); // 초기 라운드 키 추가
+// [피드백 2 반영] 2차원 배열(11행 16열)로 키를 받도록 수정
+void AES_Encrypt(byte input[16], byte roundKeys[11][16]) {
 
+	// 0라운드 키 (2차원 배열의 첫 번째 행)
+	AddRoundKey(input, roundKeys[0]); 
+
+	// [피드백 3 반영] round 변수명은 이미 좋으므로 유지
 	for (int round = 1; round <= 9; round++) {
 		SubBytes(input);
 		ShiftRows(input);
-		MixColumns(input); //// 10라운드 까지만
-		AddRoundKey(input, &roundKeys[round * AES_ROUND_SIZE]);	
+		MixColumns(input);
+		
+		// [피드백 2 반영] 포인터 연산(&) 없이 깔끔하게 접근 가능!
+		AddRoundKey(input, roundKeys[round]); 
 	}
+	
 	SubBytes(input);
 	ShiftRows(input);
-	AddRoundKey(input, &roundKeys[10 * AES_ROUND_SIZE]); // 마지막 라운드 키 추가
+	
+	// 마지막 10라운드 키
+	AddRoundKey(input, roundKeys[10]); 
 }
-
