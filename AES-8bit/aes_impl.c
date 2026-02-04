@@ -29,6 +29,15 @@ const byte sbox[256] = {
 	0x8c, 0xa1, 0x89, 0x0d, 0xbf, 0xe6, 0x42, 0x68, 0x41, 0x99, 0x2d, 0x0f, 0xb0, 0x54, 0xbb, 0x16
 };
 
+byte xtime(byte x) {
+	if (x & 0x80) { //오버플로우 발생
+		return (x << 1) ^ 0x1b;
+	}
+	else {
+		return (x << 1);
+	}
+}
+
 void SubBytes(byte state[16]) {
 	for (int byte_idx = 0; byte_idx < AES_BLOCK_SIZE; byte_idx++)
 	{
@@ -57,8 +66,20 @@ void ShiftRows(byte state[16]) {
 	state[7] = temp;
 }
 
-void MixColumns(byte state[16]) { 
-	// MixColumns 함수 구현
+void MixColumns(byte state[16]) {
+	byte s0, s1, s2, s3;
+
+	for (int i = 0; i < 16; i += 4) {
+		s0 = state[i];
+		s1 = state[i + 1];
+		s2 = state[i + 2];
+		s3 = state[i + 3]; //백업
+
+		state[i] = xtime(s0) ^ (xtime(s1) ^ s1) ^ s2 ^ s3; // 2 3 1 1
+		state[i + 1] = s0 ^ xtime(s1) ^ (xtime(s2) ^ s2) ^ s3; // 1 2 3 1
+		state[i + 2] = s0 ^ s1 ^ xtime(s2) ^ (xtime(s3) ^ s3); // 1 1 2 3
+		state[i + 3] = (xtime(s0) ^ s0) ^ s1 ^ s2 ^ xtime(s3); // 3 1 1 2
+	}
 }
 
 void AddRoundKey(byte state[16], byte roundKey[16]) {
@@ -67,6 +88,8 @@ void AddRoundKey(byte state[16], byte roundKey[16]) {
 	}
 }
 
+
+
 void AES_Encrypt(byte input[16], byte roundKeys[11][16]) {
 
 	AddRoundKey(input, roundKeys[0]); // 초기 라운드 키 추가
@@ -74,11 +97,10 @@ void AES_Encrypt(byte input[16], byte roundKeys[11][16]) {
 	for (int round = 1; round <= 9; round++) {
 		SubBytes(input);
 		ShiftRows(input);
-		MixColumns(input); //// 10라운드 까지만
-		AddRoundKey(input, roundKeys[round]);	
+		MixColumns(input); // 10라운드 까지만
+		AddRoundKey(input, roundKeys[round]);
 	}
 	SubBytes(input);
 	ShiftRows(input);
 	AddRoundKey(input, roundKeys[10]); // 마지막 라운드 키 추가
-}
-
+} // xtime 함수 구현 // 믹스컬럼 f함수 구현 끝 결과값 키스케쥴 확인 암호문 확인
