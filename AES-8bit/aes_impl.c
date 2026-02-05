@@ -38,6 +38,10 @@ byte xtime(byte x) {
 	}
 }
 
+const byte Rcon[11] = {
+	0x00, 0x01, 0x02, 0x04, 0x08, 0x10, 0x20, 0x40, 0x80, 0x1b, 0x36 //
+};
+
 void SubBytes(byte state[16]) {
 	for (int byte_idx = 0; byte_idx < AES_BLOCK_SIZE; byte_idx++)
 	{
@@ -82,13 +86,53 @@ void MixColumns(byte state[16]) {
 	}
 }
 
+void KeyExpasion(byte key[16], byte roundKeys[11][16]) {
+
+	byte* expandedkey = (byte*)roundKeys;
+	byte temp[4];
+
+	
+	for (int i = 0; i < 16; i++) {
+		expandedkey[i] = key[i];
+	}
+	for (int i = 16; i < 176; i += 4) {
+
+		temp[0] = expandedkey[i - 4];
+		temp[1] = expandedkey[i - 3];
+		temp[2] = expandedkey[i - 2];
+		temp[3] = expandedkey[i - 1];
+
+		if (i % 16 == 0) {
+
+			byte t = temp[0]; //배열후 회전
+			temp[0] = temp[3];
+			temp[3] = temp[2];
+			temp[2] = temp[1];
+			temp[1] = t;
+
+			temp[0] = sbox[temp[0]]; //S-Box 치환
+			temp[1] = sbox[temp[1]];
+			temp[2] = sbox[temp[2]];
+			temp[3] = sbox[temp[3]];
+
+			temp[0] ^= Rcon[i / 16]; //Rcon 상수 더하기
+		}
+
+		//최종 계산 및 저장
+		expandedkey[i] = expandedkey[i - 16] ^ temp[0];
+		expandedkey[i + 1] = expandedkey[i - 15] ^ temp[1];
+		expandedkey[i + 2] = expandedkey[i - 14] ^ temp[2];
+		expandedkey[i + 3] = expandedkey[i - 13] ^ temp[3];
+	}
+
+
+}
+
 void AddRoundKey(byte state[16], byte roundKey[16]) {
 	for (int byte_idx = 0; byte_idx < AES_BLOCK_SIZE; byte_idx++) {
 		state[byte_idx] ^= roundKey[byte_idx]; // 라운드 키와 상태를 XOR 연산
 	}
 }
-
-
 
 void AES_Encrypt(byte input[16], byte roundKeys[11][16]) {
 
