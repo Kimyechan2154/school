@@ -86,7 +86,7 @@ void MixColumns(byte state[16]) {
 	}
 }
 
-void KeyExpasion(byte key[16], byte roundKeys[11][16]) {
+void KeyExpansion(byte key[16], byte roundKeys[11][16]) {
 
 	byte* expandedkey = (byte*)roundKeys;
 	byte temp[4];
@@ -105,10 +105,10 @@ void KeyExpasion(byte key[16], byte roundKeys[11][16]) {
 		if (i % 16 == 0) {
 
 			byte t = temp[0]; //배열후 회전
-			temp[0] = temp[3];
-			temp[3] = temp[2];
-			temp[2] = temp[1];
-			temp[1] = t;
+			temp[0] = temp[1];
+			temp[1] = temp[2];
+			temp[2] = temp[3];
+			temp[3] = t;
 
 			temp[0] = sbox[temp[0]]; //S-Box 치환
 			temp[1] = sbox[temp[1]];
@@ -148,3 +148,26 @@ void AES_Encrypt(byte input[16], byte roundKeys[11][16]) {
 	ShiftRows(input);
 	AddRoundKey(input, roundKeys[10]); // 마지막 라운드 키 추가
 } // xtime 함수 구현 // 믹스컬럼 f함수 구현 끝 결과값 키스케쥴 확인 암호문 확인
+
+int main() {
+	byte key[16] = {
+		0x2b, 0x7e, 0x15, 0x16, 0x28, 0xae, 0xd2, 0xa6,
+		0xab, 0xf7, 0x15, 0x88, 0x09, 0xcf, 0x4f, 0x3c
+	}; // fips197에 정해진 비밀키
+
+	byte plaintext[16] = {
+		0x32, 0x43, 0xf6, 0xa8, 0x88, 0x5a, 0x30, 0x8d,
+		0x31, 0x31, 0x98, 0xa2, 0xe0, 0x37, 0x07, 0x34
+	}; // fips197에 정해진 평문
+
+	byte AES_secret_key[11][16]; //AES 키 생성
+
+	KeyExpansion(key, AES_secret_key); //키 세팅
+
+	AES_Encrypt(plaintext, AES_secret_key); //평문 ->암호문 변환
+
+	for (int i = 0; i < 16; i++) {
+		printf("%02x ", plaintext[i]);
+	} //결과 출력
+	printf("\n");
+}
