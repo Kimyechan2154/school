@@ -29,17 +29,21 @@ const byte sbox[256] = {
 	0x8c, 0xa1, 0x89, 0x0d, 0xbf, 0xe6, 0x42, 0x68, 0x41, 0x99, 0x2d, 0x0f, 0xb0, 0x54, 0xbb, 0x16
 };
 
-byte xtime(byte x) {
-	if (x & 0x80) { //오버플로우 발생
-		return (x << 1) ^ 0x1b;
-	}
-	else {
-		return (x << 1);
-	}
+//byte xtime(byte x) {
+//	if (x & 0x80) { //오버플로우 발생시
+//		return (x << 1) ^ 0x1b;
+//	}
+//	else {
+//		return (x << 1);
+//	}
+//}
+
+static inline byte xtime(byte x) {
+	return (x << 1) ^ (((x >> 7) & 1) * 0x1b); // 피드백 새로 만든  xtime
 }
 
-const byte Rcon[11] = {
-	0x00, 0x01, 0x02, 0x04, 0x08, 0x10, 0x20, 0x40, 0x80, 0x1b, 0x36 //
+const byte Rcon[10] = {
+	0x01, 0x02, 0x04, 0x08, 0x10, 0x20, 0x40, 0x80, 0x1b, 0x36 //피드백 더미데이터 삭제
 };
 
 void SubBytes(byte state[16]) {
@@ -115,7 +119,7 @@ void KeyExpansion(byte key[16], byte roundKeys[11][16]) {
 			temp[2] = sbox[temp[2]];
 			temp[3] = sbox[temp[3]];
 
-			temp[0] ^= Rcon[i / 16]; //Rcon 상수 더하기
+			temp[0] ^= Rcon[(i / 16)-1]; //Rcon 상수 더하기 + 피드백
 		}
 
 		//최종 계산 및 저장
