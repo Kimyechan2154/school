@@ -24,3 +24,49 @@
 //    scanf("%s", &n);
 //    return 0;
 //}
+
+
+// Code 04
+//#include <stdio.h>
+//
+//int main() {
+//    return 0;
+//}
+
+// Code 05
+//#include <stdio.h>
+//
+//struct Point { int x, y; };
+//
+//int main() {
+//    return 0;
+//}
+
+// Code 06
+//#include <stdio.h>
+//
+//void MyFunction(void) {
+//    printf("0");
+//}
+//
+//int main() {
+//    MyFunction();
+//    return 0;
+//}
+
+// Code 08
+//int global_val = 10;
+//
+//int main() {
+//
+//    extern int global_val;
+//    return 0;
+//}
+
+// Code 09
+//#include <stdio.h>
+//int main() {
+//    int n;
+//    scanf("%d", &n);
+//    return 0;
+//}
