@@ -25,6 +25,7 @@
 //    return 0;
 //}
 
+//깃허브 업로드
 
 // Code 04
 //#include <stdio.h>
@@ -70,3 +71,64 @@
 //    scanf("%d", &n);
 //    return 0;
 //}
+
+// Code 10
+//#include <stdio.h>
+//void Infinite() {
+//}
+//int main() {
+//    Infinite();
+//    return 0;
+//}
+
+// Code 11
+//#include <stdio.h>
+//int main() {
+//    int bigArray[1];
+//    bigArray[0] = 10;
+//    printf("value: %d", bigArray[0]);
+//    return 0;
+//}
+
+// Code 12
+//#include <stdio.h>
+//int main() {
+//    int scores[5];
+//    for (int i = 0; i < 5; i++) {
+//        scores[i] = i * 10;
+//    }
+//    return 0;
+//}
+
+// Code 13
+//#include <stdio.h>
+//#include <string.h>
+//int main() {
+//    char short_str[8];
+//    strcpy(short_str, "Hello!");
+//    return 0;
+//}
+
+// Code 14
+//#include <stdlib.h>
+//int main() {
+//    int* dynamic_arr = (int*)malloc(sizeof(int) * 101); //자리를 열어줘서 채움
+//    dynamic_arr[100] = 999;
+//    free(dynamic_arr);
+//    return 0;
+//}
+
+// Code 15
+#include <stdlib.h>
+#include <string.h>
+#include <stdio.h>
+
+int main() {
+    char* name = (char*)malloc(0);
+    strcpy(name, "Gemini");
+    printf("before free: %s\n", name);
+    free(name);
+
+    printf("access after free: %s\n", name);
+    return 0;
+}
