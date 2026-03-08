@@ -119,16 +119,30 @@
 //}
 
 // Code 15
-#include <stdlib.h>
-#include <string.h>
-#include <stdio.h>
+//#include <stdlib.h>
+//#include <string.h>
+//#include <stdio.h>
+//
+//int main() {
+//    char* name = (char*)malloc(8);
+//    strcpy(name, "Gemini");
+//    printf("before free: %s\n", name);
+//    free(name); //name에 아직도 예전 주소가 남아있다
+//    name = NULL;
+//
+//    printf("access after free: %s\n", name);
+//    return 0;
+//}
 
-int main() {
-    char* name = (char*)malloc(0);
-    strcpy(name, "Gemini");
-    printf("before free: %s\n", name);
-    free(name);
-
-    printf("access after free: %s\n", name);
-    return 0;
-}
+// Code 16
+//#include <stdio.h>
+//int main() {
+//    int cnt_i;
+//    int sum = 0;
+//    for (cnt_i = 0; cnt_i < 10; cnt_i++)
+//    {
+//        sum += cnt_i;
+//    }
+//    printf("Sum: %d\n", sum);
+//    return 0;
+//}
