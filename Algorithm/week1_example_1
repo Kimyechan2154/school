@@ -227,8 +227,6 @@ void week1_example_5() {
 
 	printf("[학생 정보 입력]\n");
 
-
-
 }
 
 
