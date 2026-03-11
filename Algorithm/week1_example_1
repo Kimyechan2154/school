@@ -1,6 +1,6 @@
 #define _CRT_SECURE_NO_WARNINGS
 #include <stdio.h>
-#include "student.h"
+//#include "student.h"
 
 
 //void week1_example_1() {
@@ -23,7 +23,7 @@
 //
 //	printf("학생1 주소입력 : "); // char addr 배열
 //	scanf("%s", &stu1.addr);
-//
+//dd
 //	printf("\n");
 //
 //	printf("학생2 이름 입력 : "); // int name
@@ -76,6 +76,7 @@
 //	//stu1.age = 20;
 //}
 //
+// //실습 1
 //
 //void week1_example_2() {
 //
@@ -121,60 +122,123 @@
 //	printf("학생1 grade : %lf\n", s1.grade); // char addr 배열
 //}
 
-void week1_example_3() {
-typedef struct STUDENT_ {
+//실습 3
+
+//void week1_example_3() {
+//	typedef struct STUDENT_ {
+//		char name[32];
+//		int id;
+//		char major[32];
+//		int age;
+//		char addr[32];
+//	} STUDENT;
+//
+//	STUDENT stu[3];
+//	int cnt_i;
+//
+//	printf("[학생 정보 입력]");
+//	for (cnt_i = 0; cnt_i < sizeof(stu) / sizeof(STUDENT); cnt_i++) {
+//		printf("\n학생 %d 이름 입력 : \n", cnt_i + 1); // int name
+//		scanf("%s", stu[cnt_i].name);
+//
+//		printf("\n학생 %d ID 입력 : \n", cnt_i + 1); // int id
+//		scanf("%d", &stu[cnt_i].id);
+//
+//		printf("\n학생 %d 전공 입력 : \n", cnt_i + 1); // char major 배열
+//		scanf("%s", stu[cnt_i].major);
+//
+//		printf("\n학생 %d 나이 입력 : \n", cnt_i + 1); // int age
+//		scanf("%d", &stu[cnt_i].age);
+//
+//		printf("\n학생 %d 주소 입력 : \n", cnt_i + 1); // char addr 배열
+//		scanf("%s", stu[cnt_i].addr);
+//	}
+//
+//	printf("\n[학생 정보 입력]");
+//
+//	for (cnt_i = 0; cnt_i < sizeof(stu) / sizeof(STUDENT); cnt_i++) {
+//		printf("\n학생 %d 이름 : %s\n", cnt_i + 1, stu[cnt_i].name); // int name
+//		printf("\n학생 %d ID : %d\n", cnt_i + 1, stu[cnt_i].id); // int id
+//		printf("\n학생 %d 전공 : %s\n", cnt_i + 1, stu[cnt_i].major); // char major 배열
+//		printf("\n학생 %d 이름 : %d\n", cnt_i + 1, stu[cnt_i].age); // int age
+//		printf("\n학생 %d 주소 : %s\n", cnt_i + 1, stu[cnt_i].addr); // char addr 배열
+//
+//	}
+//
+//	printf("\n");
+//
+//}
+
+//실습 4
+
+typedef struct _PROFILE_ {
 	char name[32];
-	int id;
-	char major[32];
-	int age;
-	char addr[32];
-} STUDENT;
+	double grade;
+	int engilsh;
+}PROFILE;
 
-STUDENT stu[3];
-int cnt_i;
+void input_data(PROFILE* sp, int size)
+{
+	int i;
 
-printf("[학생 정보 입력]");
-for (cnt_i = 0; cnt_i < sizeof(stu) / sizeof(STUDENT); cnt_i++) {
-	printf("\n학생 %d 이름 입력 : \n", cnt_i + 1); // int name
-	scanf("%s", stu[cnt_i].name);
-
-	printf("\n학생 %d ID 입력 : \n", cnt_i + 1); // int id
-	scanf("%d", &stu[cnt_i].id);
-
-	printf("\n학생 %d 전공 입력 : \n", cnt_i + 1); // char major 배열
-	scanf("%s", stu[cnt_i].major);
-
-	printf("\n학생 %d 나이 입력 : \n", cnt_i + 1); // int age
-	scanf("%d", &stu[cnt_i].age);
-
-	printf("\n학생 %d 주소 입력 : \n", cnt_i + 1); // char addr 배열
-	scanf("%s", stu[cnt_i].addr);
+	printf("이름 학점 영어점수 입력.\n");
+	for (i = 0; i < size; i++)
+	{
+		printf("%d-th 학생: \n", i + 1);
+		scanf("%s %lf %d", sp[i].name, &sp[i].grade, &sp[i].engilsh); //&연산자로 주소의 값 넘겨주기
+	}
 }
 
-printf("\n[학생 정보 입력]");
+void elite(PROFILE * sp, int size) {
+	int i;
 
-for (cnt_i = 0; cnt_i < sizeof(stu) / sizeof(STUDENT); cnt_i++) {
-	printf("\n학생 %d 이름 : %s\n", cnt_i + 1, stu[cnt_i].name); // int name
-	printf("\n학생 %d ID : %d\n", cnt_i + 1, stu[cnt_i].id); // int id
-	printf("\n학생 %d 전공 : %s\n", cnt_i + 1, stu[cnt_i].major); // char major 배열
-	printf("\n학생 %d 이름 : %d\n", cnt_i + 1, stu[cnt_i].age); // int age
-	printf("\n학생 %d 주소 : %s\n", cnt_i + 1, stu[cnt_i].addr); // char addr 배열
-
+	printf("\n[elite student!]\n");
+	for (i = 0; i < size; i++)
+	{
+		if ((sp + i)->grade >= 4.0 && (sp + i)->engilsh >= 900) {
+			printf("%s%.1lf%d", sp[i].name, &sp[i].grade, &sp[i].engilsh);
+		}
+	}
 }
 
-printf("\n");
+void week1_example_4() {
+	PROFILE new_staff[5];
+
+	input_data(new_staff, 5);
+	elite(new_staff, 5);
+}
+
+#define INCREASING
+#define DECREAING
+
+#define NAME
+#define ID
+#define HEIGHT
+
+typedef struct _STUDENT_ {
+	char name[32];
+	double grade;
+	int engilsh;
+}STUDENT;
+
+void week1_example_5() {
+	STUDENT stu[5] = { {0x00, }, };
+	int cnt_i;
+
+	printf("[학생 정보 입력]\n");
+
+
 
 }
 
 
 int main() {
-
 	//week1_example_1();
 
 	//week1_example_2();
 
-	week1_example_3();
+	//week1_example_3();
 
+	//week1_example_4();
 	return 0;
-
 }
