@@ -189,7 +189,7 @@ void input_data(PROFILE* sp, int size)
 	}
 }
 
-void elite(PROFILE * sp, int size) {
+void elite(PROFILE* sp, int size) {
 	int i;
 
 	printf("\n[elite student!]\n");
@@ -217,8 +217,8 @@ void week1_example_4() {
 
 typedef struct _STUDENT_ {
 	char name[32];
-	double grade;
-	int engilsh;
+	int id;
+	double height;
 }STUDENT;
 
 void week1_example_5() {
@@ -226,6 +226,26 @@ void week1_example_5() {
 	int cnt_i;
 
 	printf("[학생 정보 입력]\n");
+	for (cnt_i = 0; cnt_i < sizeof(stu) / sizeof(STUDENT); cnt_i++)
+	{
+		printf("\n%d 번째 학생 이름 입력:\n", cnt_i);
+		scanf("%s", stu[cnt_i].name);
+		printf("%d 번째 학생 id 입력:\n", cnt_i);
+		scanf("%s", &stu[cnt_i].id);
+		printf("%d 번째 학생 height 입력:\n", cnt_i);
+		scanf("%s", &stu[cnt_i].height);
+	}
+
+	printf("[학생 정보 출력]\n");
+	for (cnt_i = 0; cnt_i < sizeof(stu) / sizeof(STUDENT); cnt_i++)
+	{
+		printf("%d 번째 학생 이름: %s\n", cnt_i + 1, stu[cnt_i].name);
+		printf("%d 번째 학생 id: %d\n", cnt_i + 1, stu[cnt_i].id);
+		printf("%d 번째 학생 height: %lf\n", cnt_i + 1, stu[cnt_i].height);
+	}
+	printf("[이름 정렬]\n");
+	insertionSort
+
 
 }
 
@@ -238,5 +258,8 @@ int main() {
 	//week1_example_3();
 
 	//week1_example_4();
+	
+	week1_example_5();
+	
 	return 0;
 }
