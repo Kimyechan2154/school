@@ -208,18 +208,89 @@ void week1_example_4() {
 	elite(new_staff, 5);
 }
 
-#define INCREASING
-#define DECREAING
+//실습 5
 
-#define NAME
-#define ID
-#define HEIGHT
+#define INCREASING  1
+#define DECREASING  2
+
+#define NAME        1
+#define ID          2
+#define HEIGHT      3
 
 typedef struct _STUDENT_ {
 	char name[32];
 	int id;
 	double height;
 }STUDENT;
+
+
+void insertionSort(STUDENT data[], int size, int dir, int type)
+{
+	int cnt_i, cnt_j;
+	STUDENT key;
+
+	if (dir == INCREASING)
+	{
+		for (cnt_i = 1; cnt_i < size; cnt_i++)
+		{
+			key = data[cnt_i];
+
+			//key보다 더 작은 값을 찾을 때까지 계속 수행
+			for (cnt_j = cnt_i - 1; cnt_j >= 0; cnt_j--) {
+				if (type == NAME) {
+					if (strcmp(data[cnt_j].name, key.name) <= 0) {
+						break;
+					}
+				}
+				else if (type == ID)
+				{
+					if (data[cnt_j].id <= key.id) {
+						break;
+					}
+				}
+				else if (type == HEIGHT)
+				{
+					if (data[cnt_j].height <= key.height) {
+						break;
+					}
+				}
+
+				data[cnt_j + 1] = data[cnt_j];
+			}
+			data[cnt_j + 1] = key;
+		}
+	}
+	else if (dir == DECREASING)
+	{
+		for (cnt_i = 1; cnt_i < size; cnt_i++)
+		{
+			key = data[cnt_i];
+
+			for (cnt_j = cnt_i - 1; cnt_j <= 0; cnt_j--) {
+				if (type == NAME) {
+					if (strcmp(data[cnt_j].name, key.name) <= 0) {
+						break;
+					}
+				}
+				else if (type == ID)
+				{
+					if (data[cnt_j].id <= key.id) {
+						break;
+					}
+				}
+				else if (type == HEIGHT)
+				{
+					if (data[cnt_j].height <= key.height) {
+						break;
+					}
+				}
+
+				data[cnt_j + 1] = data[cnt_j];
+			}
+			data[cnt_j + 1] = key;
+		}
+	}
+}
 
 void week1_example_5() {
 	STUDENT stu[5] = { {0x00, }, };
@@ -231,9 +302,9 @@ void week1_example_5() {
 		printf("\n%d 번째 학생 이름 입력:\n", cnt_i);
 		scanf("%s", stu[cnt_i].name);
 		printf("%d 번째 학생 id 입력:\n", cnt_i);
-		scanf("%s", &stu[cnt_i].id);
+		scanf("%d", &stu[cnt_i].id);
 		printf("%d 번째 학생 height 입력:\n", cnt_i);
-		scanf("%s", &stu[cnt_i].height);
+		scanf("%lf", &stu[cnt_i].height);
 	}
 
 	printf("[학생 정보 출력]\n");
@@ -244,10 +315,31 @@ void week1_example_5() {
 		printf("%d 번째 학생 height: %lf\n", cnt_i + 1, stu[cnt_i].height);
 	}
 	printf("[이름 정렬]\n");
-	insertionSort
-
-
+	insertionSort(stu, sizeof(stu) / sizeof(STUDENT), INCREASING, NAME);
+	for (cnt_i = 0; cnt_i < sizeof(stu) / sizeof(STUDENT); cnt_i++)
+	{
+		printf("%d 번째 학생 이름: %s\n", cnt_i + 1, stu[cnt_i].name);
+		printf("%d 번째 학생 id: %d\n", cnt_i + 1, stu[cnt_i].id);
+		printf("%d 번째 학생 height: %lf\n", cnt_i + 1, stu[cnt_i].height);
+	}
+	printf("[id 정렬]\n");
+	insertionSort(stu, sizeof(stu) / sizeof(STUDENT), INCREASING, ID);
+	for (cnt_i = 0; cnt_i < sizeof(stu) / sizeof(STUDENT); cnt_i++)
+	{
+		printf("%d 번째 학생 이름: %s\n", cnt_i + 1, stu[cnt_i].name);
+		printf("%d 번째 학생 id: %d\n", cnt_i + 1, stu[cnt_i].id);
+		printf("%d 번째 학생 height: %lf\n", cnt_i + 1, stu[cnt_i].height);
+	}
+	printf("[height 정렬]\n");
+	insertionSort(stu, sizeof(stu) / sizeof(STUDENT), INCREASING, HEIGHT);
+	for (cnt_i = 0; cnt_i < sizeof(stu) / sizeof(STUDENT); cnt_i++)
+	{
+		printf("%d 번째 학생 이름: %s\n", cnt_i + 1, stu[cnt_i].name);
+		printf("%d 번째 학생 id: %d\n", cnt_i + 1, stu[cnt_i].id);
+		printf("%d 번째 학생 height: %lf\n", cnt_i + 1, stu[cnt_i].height);
+	}
 }
+
 
 
 int main() {
