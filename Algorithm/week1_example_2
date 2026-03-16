@@ -1,0 +1,68 @@
+#define _CRT_SECURE_NO_WARNINGS
+
+#include <stdio.h>
+
+void exercise1()
+{
+	int num = 20;
+	void* ptr = &num;
+
+	printf("address of num: %p\n", ptr);
+
+}
+
+int* testMem1()
+{
+	int data[10] = { 0x00, };
+	int cnt_i;
+
+	for (cnt_i = 0; cnt_i < 10; cnt_i++) {
+		data[cnt_i] = cnt_i;
+		printf("%d in testMem1\n", data[cnt_i]);
+	}
+	return data;
+}
+
+int* testMem2()
+{
+	int* data = NULL;
+	int cnt_i;
+
+	data = (int*)calloc(10, sizeof(int));
+	for (cnt_i = 0; cnt_i < 10; cnt_i++) {
+		data[cnt_i] = cnt_i;
+		printf("%d in testMem1\n", data[cnt_i]);
+	}
+	return data;
+}
+
+
+int* exercise2()
+{
+	int* data = NULL;
+	int cnt_i;
+	data = testMem1();
+	printf("\n");
+	for (cnt_i = 0; cnt_i < 10; cnt_i++) {
+		printf("%d in exercise2\n", data[cnt_i]);
+	}
+	printf("\n");
+
+	data = testMem2();
+	printf("\n");
+	for (cnt_i = 0; cnt_i < 10; cnt_i++) {
+		printf("%d in exercise2\n", data[cnt_i]);
+	}
+	free(data);
+}
+
+
+int main()
+{
+	//exercise1();
+
+	exercise2();
+
+	getchar();
+	return 0;
+}
