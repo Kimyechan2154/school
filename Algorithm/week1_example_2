@@ -1,6 +1,8 @@
 #define _CRT_SECURE_NO_WARNINGS
 
 #include <stdio.h>
+#include <stdlib.h>
+#include <time.h>
 
 void exercise1()
 {
@@ -56,13 +58,75 @@ int* exercise2()
 	free(data);
 }
 
+//실습 3
+
+void generate(int data[], int mod, int size) 
+{
+	int cnt_i;
+	srand(time(NULL));
+	for (cnt_i = 0; cnt_i < 10; cnt_i++) {
+		data[cnt_i] = rand() % mod;
+	}
+}
+
+int getSum(int data[], int size)
+{
+	int cnt_i;
+	int sum = 0;
+	for (cnt_i = 0; cnt_i < size; cnt_i++) {
+		sum += data[cnt_i];
+	}
+	return sum;
+}
+
+void printArray(int data[], int size)
+{
+	int cnt_i;
+	
+	for (cnt_i = 0; cnt_i < size; cnt_i++) {
+		if ((cnt_i != 0) && !(cnt_i % 8)) {
+			printf("\n");
+		}
+		printf("%6d", data[cnt_i]);
+	}
+	printf("\n");
+}
+void exercise3()
+{
+	int* p;
+	int cnt;
+	int sum;
+
+	printf(" 입력할 정수의 개수? ");
+	scanf("%d", &cnt);
+
+	p = (int*)calloc(10, sizeof(int));
+	if (p == NULL) {
+		printf("실패 \n");
+		return;
+	}
+
+	generate(p, 100, cnt);
+	printArray(p, cnt);
+	sum = getSum(p, cnt);
+
+	printf("합: %d\n", sum);
+
+	if (p != NULL) {
+		return;
+	}
+
+}
 
 int main()
 {
 	//exercise1();
 
-	exercise2();
+	//exercise2();
+
+	exercise3();
 
 	getchar();
 	return 0;
 }
+
