@@ -166,7 +166,7 @@ void exercise4() {
 	printf("몇개의 문장 입력: \n");
 
 	scanf("%d%c", &num0fStr, &temp);
-	greet3 = (char**)calloc(num0fStr, sizeof(char*));
+	greet3 = (char**)calloc(num0fStr, sizeof(char*)); //문장의 개수마저 동적 관리
 
 	for (cnt_i = 0; cnt_i < num0fStr; cnt_i++) {
 		printf("문장 입력\n");
@@ -179,7 +179,7 @@ void exercise4() {
 	for (cnt_i = 0; cnt_i < num0fStr; cnt_i++) {
 		printf("%s\n", greet3[cnt_i]);
 	}
-	for (cnt_i = 0; cnt_i < 3; cnt_i++) {
+	for (cnt_i = 0; cnt_i < num0fStr; cnt_i++) {
 		free(greet3[cnt_i]);
 	}
 	free(greet3);
