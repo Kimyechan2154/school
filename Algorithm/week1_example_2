@@ -4,14 +4,18 @@
 #include <stdlib.h>
 #include <time.h>
 
+//실습 1
+
 void exercise1()
 {
 	int num = 20;
-	void* ptr = &num;
+	void* ptr = &num; //형변환
 
 	printf("address of num: %p\n", ptr);
 
 }
+
+//실습 1-2
 
 int* testMem1()
 {
@@ -58,7 +62,7 @@ int* exercise2()
 	free(data);
 }
 
-//실습 3
+//실습 2
 
 void generate(int data[], int mod, int size) 
 {
@@ -117,8 +121,10 @@ void exercise3()
 	}
 }
 
-void exercise3() {
-	char greet[3][20] = { {0x00, }, };
+//실습 3-1
+
+void exercise4() {
+	char greet[3][20] = { {0x00, }, }; //고정된 크기 사용해 공간 낭비 발생
 	int cnt_i;
 
 	printf("[2차원 배열]\n");
@@ -133,7 +139,7 @@ void exercise3() {
 	}
 
 	char buffer[32];
-	char *greet2[3] = {0x00, };
+	char *greet2[3] = {0x00, }; //포인터 배열을 이용해 문장의 길이에 맞춰 메모리 할당
 	char **greet3 = NULL;
 	char temp;
 	int len;
@@ -141,14 +147,91 @@ void exercise3() {
 
 	printf("[동적 할당 이용 1]\n");
 	for (cnt_i = 0; cnt_i < 3; cnt_i++) {
-		printf("문장 입력");
+		printf("문장 입력\n");
 		gets(buffer);
 		len = strlen(buffer);
-		greet2[cnt_i] = 
+		greet2[cnt_i] = (char*)calloc(len + 1, sizeof(char));
+		strcpy(greet2[cnt_i], buffer, len + 1);
+	}
+	printf("\n 입력된 문장.\n");
+	for (cnt_i = 0; cnt_i < 3; cnt_i++) {
+		printf("%s\n", greet2[cnt_i]);
 	}
 
+	for (cnt_i = 0; cnt_i < 3; cnt_i++) {
+		free(greet2[cnt_i]);
+	}
+	
+	printf("[동적 2]\n");
+	printf("몇개의 문장 입력: \n");
 
+	scanf("%d%c", &num0fStr, &temp);
+	greet3 = (char**)calloc(num0fStr, sizeof(char*));
+
+	for (cnt_i = 0; cnt_i < num0fStr; cnt_i++) {
+		printf("문장 입력\n");
+		gets(buffer);
+		len = strlen(buffer);
+		greet3[cnt_i] = (char*)calloc(len + 1, sizeof(char));
+		strcpy(greet3[cnt_i], buffer, len + 1);
+	}
+	printf("\n 입력된 문장.\n");
+	for (cnt_i = 0; cnt_i < num0fStr; cnt_i++) {
+		printf("%s\n", greet3[cnt_i]);
+	}
+	for (cnt_i = 0; cnt_i < 3; cnt_i++) {
+		free(greet3[cnt_i]);
+	}
+	free(greet3);
 }
+
+//실습 3-2
+void exercise3_2() 
+{
+	int row, col;
+	int** matrix = NULL;
+	int cnt_i, cnt_j;
+
+	srand(time(NULL));
+
+	printf("행, 열 입력.\n");
+	scanf("%d%d", &row, &col);
+
+	matrix = ;
+	assert(matrix != NULL);
+
+	for (cnt_i = 0; cnt_i < row; cnt_i++) {
+		matrix[cnt_i];
+		assert(matrix[cnt_i] != NULL);
+	}
+
+	for (cnt_i = 0; cnt_i < row; cnt_i++)
+	{
+		for (cnt_j = 0; cnt_j < col; cnt_j++)
+		{
+			matrix[cnt_i][cnt_j] = rand()%32;
+		}
+	}
+
+	printf("[matrix]\n");
+	for (cnt_i = 0; cnt_i < row; cnt_i++)
+	{
+		for (cnt_j = 0; cnt_j < col; cnt_j++)
+		{
+			printf("%d\t", matrix[cnt_i][cnt_j]);
+		}
+		printf("\n");
+	}
+	for (cnt_i = 0; cnt_i < row; cnt_i++)
+	{
+		free;
+	}
+	free;
+}
+
+
+
+
 
 int main()
 {
@@ -156,7 +239,9 @@ int main()
 
 	//exercise2();
 
-	exercise3();
+	//exercise3();
+
+	exercise4();
 
 	getchar();
 	return 0;
