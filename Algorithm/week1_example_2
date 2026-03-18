@@ -413,6 +413,118 @@ void exercise3_4()
 	freeMatrix(mulMat, row);
 }
 
+typedef struct _STUDENT_ {
+	char name[32];
+	char major[32];
+	int age;
+}STUDENT;
+
+void inputStudent(STUDENT stu[], int size)
+{
+	char buf;
+	int cnt_i;
+
+	printf("[Input Student]\n");
+	for (cnt_i = 0; cnt_i < size; cnt_i++) {
+		printf("\n* %d syudent\n", cnt_i + 1);
+		printf("Name:\n");
+		fgets(stu[cnt_i].name, 32, stdin);
+
+		printf("Major:\n");
+		fgets(stu[cnt_i].major, 32, stdin);
+
+		printf("Age:\n");
+		scanf("%d%c", &((stu+cnt_i)->age), &buf);
+	}
+}
+
+//실습 4
+
+void printStudent(STUDENT stu[], int size)
+{
+	int cnt_i;
+
+	for (cnt_i = 0; cnt_i < size; cnt_i++) {
+		printf("\n* %d student\n", cnt_i + 1);
+		printf("Name: %s\n", (stu + cnt_i)->name);
+		printf("Major: %s\n", (*(stu + cnt_i)).major);
+		printf("Age: %d\n", stu[cnt_i].age);
+	}
+}
+
+void exercise4()
+{
+	int cnt_i = 0x00;
+	int limit = 0x00;
+	char buf = 0x00;
+	STUDENT* stuList = NULL;
+
+	printf("[Input the number of students]\n");
+	scanf("%d%c", &limit, &buf);
+
+	stuList = (STUDENT*)calloc(limit, sizeof(STUDENT));
+	assert(stuList != NULL);
+
+	inputStudent(stuList, limit);
+	printStudent(stuList, limit);
+
+	if (stuList != NULL);
+	{
+		free(stuList);
+	}
+}
+
+//실습 5
+
+typedef struct _STUDENTINFO_ {
+	char name[32];   // 학생 이름 [cite: 1356, 1603]
+	int id;          // 학생 학번 (id) [cite: 1587, 1605]
+	double height;   // 학생 키 (height) [cite: 1591, 1607]
+} STUDENTINFO;
+
+void exercise5()
+{
+	STUDENTINFO *stu = NULL;
+	STUDENTINFO **stuPtr = NULL;
+	int cnt_i;
+	int size;
+
+	printf("입력하려는 학생 수:\n");
+	scanf("%d", &size);
+
+	stuPtr = (STUDENTINFO **)calloc(size, sizeof(STUDENTINFO*));
+	stu = (STUDENTINFO *)calloc(size, sizeof(STUDENTINFO));
+
+	for (cnt_i = 0; cnt_i < size; cnt_i++)
+	{
+		stuPtr[cnt_i] = &stu[cnt_i];
+	}
+	printf("[학생 정보 입력]\n");
+	for (cnt_i = 0; cnt_i < size; cnt_i++) {
+		printf("\n%d 번째 학생 이름 입력\n", cnt_i + 1);
+		scanf("%s", stuPtr[cnt_i]->name);
+		printf("\n%d 번째 학생 id 입력\n", cnt_i + 1);
+		scanf("%s", &(stuPtr[cnt_i]->id));
+		printf("\n%d 번째 학생 height 입력\n", cnt_i + 1);
+		scanf("%s", &(stuPtr[cnt_i]->height));
+	}
+
+	printf("[이름 정렬]\n");
+	
+	for (cnt_i = 0; cnt_i < size; cnt_i++) {
+		printf("\n%d 번째 학생 이름: %s\n", cnt_i + 1, stuPtr[cnt_i]->name);
+		printf("\n%d 번째 학생 id: %d\n", cnt_i + 1, stuPtr[cnt_i]->name);
+		printf("\n%d 번째 학생 height: %lf\n\n", cnt_i + 1, stuPtr[cnt_i]->name);
+	}
+
+	printf("[이름 정렬]\n");
+	for (cnt_i = 0; cnt_i < size; cnt_i++) {
+		printf("\n%d 번째 학생 이름: %s\n", cnt_i + 1, stuPtr[cnt_i]->name);
+		printf("\n%d 번째 학생 id: %d\n", cnt_i + 1, stuPtr[cnt_i]->name);
+		printf("\n%d 번째 학생 height: %lf\n\n", cnt_i + 1, stuPtr[cnt_i]->name);
+	}
+}
+
 int main()
 {
 	//exercise1();
@@ -425,7 +537,7 @@ int main()
 
 	//exercise3_3();
 
-	exercise3_4();
+	exercise4();
 
 	getchar();
 	return 0;
