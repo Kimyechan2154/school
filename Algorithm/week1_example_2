@@ -3,193 +3,288 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <time.h>
+#include <assert.h>
 
 //실습 1
 
-void exercise1()
-{
-	int num = 20;
-	void* ptr = &num; //형변환
+//void exercise1()
+//{
+//	int num = 20;
+//	void* ptr = &num; //형변환
+//
+//	printf("address of num: %p\n", ptr);
+//
+//}
+//
+////실습 1-2
+//
+//int* testMem1()
+//{
+//	int data[10] = { 0x00, };
+//	int cnt_i;
+//
+//	for (cnt_i = 0; cnt_i < 10; cnt_i++) {
+//		data[cnt_i] = cnt_i;
+//		printf("%d in testMem1\n", data[cnt_i]);
+//	}
+//	return data;
+//}
+//
+//int* testMem2()
+//{
+//	int* data = NULL;
+//	int cnt_i;
+//
+//	data = (int*)calloc(10, sizeof(int));
+//	for (cnt_i = 0; cnt_i < 10; cnt_i++) {
+//		data[cnt_i] = cnt_i;
+//		printf("%d in testMem1\n", data[cnt_i]);
+//	}
+//	return data;
+//}
+//
+//
+//int* exercise2()
+//{
+//	int* data = NULL;
+//	int cnt_i;
+//	data = testMem1();
+//	printf("\n");
+//	for (cnt_i = 0; cnt_i < 10; cnt_i++) {
+//		printf("%d in exercise2\n", data[cnt_i]);
+//	}
+//	printf("\n");
+//
+//	data = testMem2();
+//	printf("\n");
+//	for (cnt_i = 0; cnt_i < 10; cnt_i++) {
+//		printf("%d in exercise2\n", data[cnt_i]);
+//	}
+//	free(data);
+//}
+//
+////실습 2
+//
+//void generate(int data[], int mod, int size) 
+//{
+//	int cnt_i;
+//	srand(time(NULL));
+//	for (cnt_i = 0; cnt_i < 10; cnt_i++) {
+//		data[cnt_i] = rand() % mod;
+//	}
+//}
+//
+//int getSum(int data[], int size)
+//{
+//	int cnt_i;
+//	int sum = 0;
+//	for (cnt_i = 0; cnt_i < size; cnt_i++) {
+//		sum += data[cnt_i];
+//	}
+//	return sum;
+//}
+//
+//void printArray(int data[], int size)
+//{
+//	int cnt_i;
+//	
+//	for (cnt_i = 0; cnt_i < size; cnt_i++) {
+//		if ((cnt_i != 0) && !(cnt_i % 8)) {
+//			printf("\n");
+//		}
+//		printf("%6d", data[cnt_i]);
+//	}
+//	printf("\n");
+//}
+//void exercise3()
+//{
+//	int* p;
+//	int cnt;
+//	int sum;
+//
+//	printf(" 입력할 정수의 개수? ");
+//	scanf("%d", &cnt);
+//
+//	p = (int*)calloc(10, sizeof(int));
+//	if (p == NULL) {
+//		printf("실패 \n");
+//		return;
+//	}
+//
+//	generate(p, 100, cnt);
+//	printArray(p, cnt);
+//	sum = getSum(p, cnt);
+//
+//	printf("합: %d\n", sum);
+//
+//	if (p != NULL) {
+//		return;
+//	}
+//}
+//
+////실습 3-1
+//
+//void exercise4() {
+//	char greet[3][20] = { {0x00, }, }; //고정된 크기 사용해 공간 낭비 발생
+//	int cnt_i;
+//
+//	printf("[2차원 배열]\n");
+//	for (cnt_i = 0; cnt_i < 3; cnt_i++) {
+//		printf("문장 입력:\n");
+//		gets(greet[cnt_i]);
+//	}
+//
+//	printf("\n 입력된 문장은: \n");
+//	for (cnt_i = 0; cnt_i < 3; cnt_i++) {
+//		printf("%s\n", greet[cnt_i]);
+//	}
+//
+//	char buffer[32];
+//	char *greet2[3] = {0x00, }; //포인터 배열을 이용해 문장의 길이에 맞춰 메모리 할당
+//	char **greet3 = NULL;
+//	char temp;
+//	int len;
+//	int num0fStr;
+//
+//	printf("[동적 할당 이용 1]\n");
+//	for (cnt_i = 0; cnt_i < 3; cnt_i++) {
+//		printf("문장 입력\n");
+//		gets(buffer);
+//		len = strlen(buffer);
+//		greet2[cnt_i] = (char*)calloc(len + 1, sizeof(char));
+//		strncpy(greet2[cnt_i], buffer, len + 1);
+//	}
+//	printf("\n 입력된 문장.\n");
+//	for (cnt_i = 0; cnt_i < 3; cnt_i++) {
+//		printf("%s\n", greet2[cnt_i]);
+//	}
+//
+//	for (cnt_i = 0; cnt_i < 3; cnt_i++) {
+//		free(greet2[cnt_i]);
+//	}
+//	
+//	printf("[동적 2]\n");
+//	printf("몇개의 문장 입력: \n");
+//
+//	scanf("%d%c", &num0fStr, &temp);
+//	greet3 = (char**)calloc(num0fStr, sizeof(char*)); //문장의 개수마저 동적 관리
+//
+//	for (cnt_i = 0; cnt_i < num0fStr; cnt_i++) {
+//		printf("문장 입력\n");
+//		gets(buffer);
+//		len = strlen(buffer);
+//		greet3[cnt_i] = (char*)calloc(len + 1, sizeof(char));
+//		strncpy(greet3[cnt_i], buffer, len + 1);
+//	}
+//	printf("\n 입력된 문장.\n");
+//	for (cnt_i = 0; cnt_i < num0fStr; cnt_i++) {
+//		printf("%s\n", greet3[cnt_i]);
+//	}
+//	for (cnt_i = 0; cnt_i < num0fStr; cnt_i++) {
+//		free(greet3[cnt_i]);
+//	}
+//	free(greet3);
+//}
+//
+////실습 3-2
+//void exercise3_2() 
+//{
+//	int row, col;
+//	int **matrix = NULL;
+//	int cnt_i, cnt_j;
+//
+//	srand(time(NULL));
+//
+//	printf("행, 열 입력.\n");
+//	scanf("%d%d", &row, &col);
+//
+//	matrix = (int**)calloc(row, sizeof(int*));
+//
+//
+//	for (cnt_i = 0; cnt_i < row; cnt_i++) {
+//		// 각 행(세로) 요소에 실제 정수를 저장할 가로 공간을 할당해야 함 [cite: 870, 887]
+//		matrix[cnt_i] = (int*)calloc(col, sizeof(int));
+//			return;
+//	}
+//
+//	for (cnt_i = 0; cnt_i < row; cnt_i++)
+//	{
+//		for (cnt_j = 0; cnt_j < col; cnt_j++)
+//		{
+//			matrix[cnt_i][cnt_j] = rand()%32;
+//		}
+//	}
+//
+//	printf("[matrix]\n");
+//	for (cnt_i = 0; cnt_i < row; cnt_i++)
+//	{
+//		for (cnt_j = 0; cnt_j < col; cnt_j++)
+//		{
+//			printf("%d\t", matrix[cnt_i][cnt_j]);
+//		}
+//		printf("\n");
+//	}
+//	for (cnt_i = 0; cnt_i < row; cnt_i++)
+//	{
+//		free(matrix[cnt_i]);
+//	}
+//	free(matrix);
+//}
 
-	printf("address of num: %p\n", ptr);
+//실습 3-3
 
-}
+void inputMat(int* matrix[], int numRows, int numCols, int mod) {
+	int cnt_i, cnt_j;
 
-//실습 1-2
-
-int* testMem1()
-{
-	int data[10] = { 0x00, };
-	int cnt_i;
-
-	for (cnt_i = 0; cnt_i < 10; cnt_i++) {
-		data[cnt_i] = cnt_i;
-		printf("%d in testMem1\n", data[cnt_i]);
-	}
-	return data;
-}
-
-int* testMem2()
-{
-	int* data = NULL;
-	int cnt_i;
-
-	data = (int*)calloc(10, sizeof(int));
-	for (cnt_i = 0; cnt_i < 10; cnt_i++) {
-		data[cnt_i] = cnt_i;
-		printf("%d in testMem1\n", data[cnt_i]);
-	}
-	return data;
-}
-
-
-int* exercise2()
-{
-	int* data = NULL;
-	int cnt_i;
-	data = testMem1();
-	printf("\n");
-	for (cnt_i = 0; cnt_i < 10; cnt_i++) {
-		printf("%d in exercise2\n", data[cnt_i]);
-	}
-	printf("\n");
-
-	data = testMem2();
-	printf("\n");
-	for (cnt_i = 0; cnt_i < 10; cnt_i++) {
-		printf("%d in exercise2\n", data[cnt_i]);
-	}
-	free(data);
-}
-
-//실습 2
-
-void generate(int data[], int mod, int size) 
-{
-	int cnt_i;
-	srand(time(NULL));
-	for (cnt_i = 0; cnt_i < 10; cnt_i++) {
-		data[cnt_i] = rand() % mod;
-	}
-}
-
-int getSum(int data[], int size)
-{
-	int cnt_i;
-	int sum = 0;
-	for (cnt_i = 0; cnt_i < size; cnt_i++) {
-		sum += data[cnt_i];
-	}
-	return sum;
-}
-
-void printArray(int data[], int size)
-{
-	int cnt_i;
-	
-	for (cnt_i = 0; cnt_i < size; cnt_i++) {
-		if ((cnt_i != 0) && !(cnt_i % 8)) {
-			printf("\n");
+	for (cnt_i = 0; cnt_i < numRows; cnt_i++) {
+		for (cnt_j = 0; cnt_j < numCols; cnt_j++) {
+			matrix[cnt_i][cnt_j] = rand() % mod;
 		}
-		printf("%6d", data[cnt_i]);
 	}
-	printf("\n");
 }
-void exercise3()
+
+void printMat(int* matrix[], int numRows, int numCols) {
+	int cnt_i, cnt_j;
+
+	for (cnt_i = 0; cnt_i < numRows; cnt_i++) {
+		for (cnt_j = 0; cnt_j < numCols; cnt_j++) {
+			printf("%d\t", matrix[cnt_i][cnt_j]);
+		}
+		printf("\n");
+	}
+}
+
+void matrixAdd(int* addMat[], int* matA[], int* matB[], int numRows, int numCols)
 {
-	int* p;
-	int cnt;
-	int sum;
+	int cnt_i, cnt_j;
 
-	printf(" 입력할 정수의 개수? ");
-	scanf("%d", &cnt);
-
-	p = (int*)calloc(10, sizeof(int));
-	if (p == NULL) {
-		printf("실패 \n");
-		return;
-	}
-
-	generate(p, 100, cnt);
-	printArray(p, cnt);
-	sum = getSum(p, cnt);
-
-	printf("합: %d\n", sum);
-
-	if (p != NULL) {
-		return;
+	for (cnt_i = 0; cnt_i < numRows; cnt_i++) {
+		for (cnt_j = 0; cnt_j < numCols; cnt_j++) {
+			addMat[cnt_i][cnt_j] = matA[cnt_i][cnt_j] + matB[cnt_i][cnt_j];
+		}
 	}
 }
 
-//실습 3-1
+void matrixMul(int* mulMat[], int* matA[], int* matB[], int numRows, int numCols)
+{
+	int cnt_i, cnt_j, cnt_k;
 
-void exercise4() {
-	char greet[3][20] = { {0x00, }, }; //고정된 크기 사용해 공간 낭비 발생
-	int cnt_i;
+	for (cnt_i = 0; cnt_i < numRows; cnt_i++) {
+		for (cnt_j = 0; cnt_j < numCols; cnt_j++) {
+			mulMat[cnt_i][cnt_j] = 0;
 
-	printf("[2차원 배열]\n");
-	for (cnt_i = 0; cnt_i < 3; cnt_i++) {
-		printf("문장 입력:\n");
-		gets(greet[cnt_i]);
+			for (cnt_k = 0; cnt_k < numCols; cnt_k++) {
+				mulMat[cnt_i][cnt_j] += (matA[cnt_i][cnt_k] * matB[cnt_k][cnt_j]);
+			}
+		}
 	}
-
-	printf("\n 입력된 문장은: \n");
-	for (cnt_i = 0; cnt_i < 3; cnt_i++) {
-		printf("%s\n", greet[cnt_i]);
-	}
-
-	char buffer[32];
-	char *greet2[3] = {0x00, }; //포인터 배열을 이용해 문장의 길이에 맞춰 메모리 할당
-	char **greet3 = NULL;
-	char temp;
-	int len;
-	int num0fStr;
-
-	printf("[동적 할당 이용 1]\n");
-	for (cnt_i = 0; cnt_i < 3; cnt_i++) {
-		printf("문장 입력\n");
-		gets(buffer);
-		len = strlen(buffer);
-		greet2[cnt_i] = (char*)calloc(len + 1, sizeof(char));
-		strcpy(greet2[cnt_i], buffer, len + 1);
-	}
-	printf("\n 입력된 문장.\n");
-	for (cnt_i = 0; cnt_i < 3; cnt_i++) {
-		printf("%s\n", greet2[cnt_i]);
-	}
-
-	for (cnt_i = 0; cnt_i < 3; cnt_i++) {
-		free(greet2[cnt_i]);
-	}
-	
-	printf("[동적 2]\n");
-	printf("몇개의 문장 입력: \n");
-
-	scanf("%d%c", &num0fStr, &temp);
-	greet3 = (char**)calloc(num0fStr, sizeof(char*)); //문장의 개수마저 동적 관리
-
-	for (cnt_i = 0; cnt_i < num0fStr; cnt_i++) {
-		printf("문장 입력\n");
-		gets(buffer);
-		len = strlen(buffer);
-		greet3[cnt_i] = (char*)calloc(len + 1, sizeof(char));
-		strcpy(greet3[cnt_i], buffer, len + 1);
-	}
-	printf("\n 입력된 문장.\n");
-	for (cnt_i = 0; cnt_i < num0fStr; cnt_i++) {
-		printf("%s\n", greet3[cnt_i]);
-	}
-	for (cnt_i = 0; cnt_i < num0fStr; cnt_i++) {
-		free(greet3[cnt_i]);
-	}
-	free(greet3);
 }
 
-//실습 3-2
-void exercise3_2() 
+void exercise3_3()
 {
 	int row, col;
-	int** matrix = NULL;
+	int **matrixA = NULL, **matrixB = NULL;
+	int **addMat = NULL, **mulMat = NULL;
 	int cnt_i, cnt_j;
 
 	srand(time(NULL));
@@ -197,41 +292,126 @@ void exercise3_2()
 	printf("행, 열 입력.\n");
 	scanf("%d%d", &row, &col);
 
-	matrix = ;
-	assert(matrix != NULL);
+	matrixA = (int**)calloc(row, sizeof(int*));
+	assert(matrixA != NULL);
+
+	matrixB = (int**)calloc(row, sizeof(int*));
+	assert(matrixB != NULL);
+	
+	addMat = (int**)calloc(row, sizeof(int*));
+	assert(addMat != NULL);
+	
+	mulMat = (int**)calloc(row, sizeof(int*));
+	assert(mulMat != NULL);
 
 	for (cnt_i = 0; cnt_i < row; cnt_i++) {
-		matrix[cnt_i];
-		assert(matrix[cnt_i] != NULL);
+		// 각 행(세로) 요소에 실제 정수를 저장할 가로 공간을 할당해야 함 [cite: 870, 887]
+		matrixA[cnt_i] = (int*)calloc(col, sizeof(int));
+		assert(matrixA[cnt_i] != NULL);
+		matrixB[cnt_i] = (int*)calloc(col, sizeof(int));
+		assert(matrixB[cnt_i] != NULL);
+		addMat[cnt_i] = (int*)calloc(col, sizeof(int));
+		assert(addMat[cnt_i] != NULL);
+		mulMat[cnt_i] = (int*)calloc(col, sizeof(int));
+		assert(mulMat[cnt_i] != NULL);
 	}
+
+	inputMat(matrixA, row, col, 16);
+	inputMat(matrixB, row, col, 16);
+
+	printf("[matrix A]\n");
+	printMat(matrixA, row, col);
+
+	printf("[matrix B]\n");
+	printMat(matrixB, row, col);
+
+	matrixAdd(addMat, matrixA, matrixB, row, col);
+	matrixMul(mulMat, matrixA, matrixB, row, col);
+
+	printf("[matrix addition]\n");
+	printMat(addMat, row, col);
+
+	printf("[matrix multiplication]\n");
+	printMat(mulMat, row, col);
 
 	for (cnt_i = 0; cnt_i < row; cnt_i++)
 	{
-		for (cnt_j = 0; cnt_j < col; cnt_j++)
-		{
-			matrix[cnt_i][cnt_j] = rand()%32;
-		}
+		free(matrixA[cnt_i]);
+		free(matrixB[cnt_i]);
+		free(addMat[cnt_i]);
+		free(mulMat[cnt_i]);
 	}
-
-	printf("[matrix]\n");
-	for (cnt_i = 0; cnt_i < row; cnt_i++)
-	{
-		for (cnt_j = 0; cnt_j < col; cnt_j++)
-		{
-			printf("%d\t", matrix[cnt_i][cnt_j]);
-		}
-		printf("\n");
-	}
-	for (cnt_i = 0; cnt_i < row; cnt_i++)
-	{
-		free;
-	}
-	free;
+	free(matrixA);
+	free(matrixB);
+	free(addMat);
+	free(mulMat);
 }
 
+//실습 3-4
+
+int** allocMatrix(int row, int col) {
+	int** matrix = NULL;
+	int cnt_i;
+
+	matrix = (int**)calloc(row, sizeof(int*));
+	assert(matrix != NULL);
+	for (cnt_i = 0; cnt_i < row; cnt_i++) {
+		matrix[cnt_i] = (int*)calloc(col, sizeof(int));
+		assert(matrix[cnt_i] != NULL);
+	}
+	return matrix;
+}
+
+void freeMatrix(int** matrix, int row) {
+	int cnt_i;
+
+	for (cnt_i = 0; cnt_i < row; cnt_i++) {
+		free(matrix[cnt_i]);
+	}
+	free(matrix);
+}
+
+void exercise3_4()
+{
+	int row, col;
+	int **matrixA = NULL, **matrixB = NULL;
+	int **addMat = NULL, **mulMat = NULL;
+	int cnt_i, cnt_j;
+
+	srand(time(NULL));
+
+	printf("행, 열 입력.\n");
+	scanf("%d%d", &row, &col);
+
+	matrixA = allocMatrix(row, col);
+	matrixB = allocMatrix(row, col);
+	addMat = allocMatrix(row, col);
+	mulMat = allocMatrix(row, col);
 
 
+	inputMat(matrixA, row, col, 16);
+	inputMat(matrixB, row, col, 16);
 
+	printf("[matrix A]\n");
+	printMat(matrixA, row, col);
+
+	printf("[matrix B]\n");
+	printMat(matrixB, row, col);
+
+	matrixAdd(addMat, matrixA, matrixB, row, col);
+	matrixMul(mulMat, matrixA, matrixB, row, col);
+
+	printf("[matrix addition]\n");
+	printMat(addMat, row, col);
+
+	printf("[matrix multiplication]\n");
+	printMat(mulMat, row, col);
+
+	freeMatrix(matrixA, row);
+	freeMatrix(matrixB, row);
+	freeMatrix(addMat, row);
+	freeMatrix(mulMat, row);
+}
 
 int main()
 {
@@ -241,7 +421,11 @@ int main()
 
 	//exercise3();
 
-	exercise4();
+	//exercise3_2();
+
+	//exercise3_3();
+
+	exercise3_4();
 
 	getchar();
 	return 0;
