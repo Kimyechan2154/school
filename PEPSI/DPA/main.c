@@ -28,7 +28,7 @@ const uint8_t sbox[256] = {
 
 void fileReadTest()
 {
-    //이거는 그럼 부호없는 8비트짜리 변수 pt를 선언하고 pt의 이중포인터 값을 초기화 하여 평문 데이터를 저장할 수 있게 만든다
+    //부호없는 8비트짜리 변수 pt를 선언하고 pt의 이중포인터 값을 초기화 하여 평문 데이터를 저장할 수 있게 만든다
     uint8_t** pt = NULL; //평문 데이터를 저장할 이중 포인터 변수 선언, 초기화
     float** trace = NULL; //전력 파형 데이터
     FILE* ptFile = fopen(PT_PATH, "rt");//평문, 암호문은 텍스트로 연다.
@@ -86,23 +86,25 @@ void fileReadTest()
     }
     printf("\n"); 
 
-    //dpa 구현
+    //dpa 구현 시각화(파이선으로 10개정도)
 
     // 전체 16바이트 정답 키를 저장할 배열
     uint8_t finalKey[16] = { 0, };
-    float bytePeaks[16] = { 0.0f, }; // 각 바이트의 최고 피크값을 저장할 배열
+    // [추가] 각 바이트의 최고 피크값을 저장할 배열
+    float bytePeaks[16] = { 0.0f, };
 
-    printf("\n[전체 16바이트 DPA 분석 시작]\n");
+    printf("\n[전체 16바이트 DPA 분석 시작 (MSB 모델)]\n");
 
-    // 16바이트 키 하나씩 찾는 루프
-    for (int targetByte = 0; targetByte < 16; targetByte++) 
+    // 타겟 바이트 루프 (0번 ~ 15번 바이트)
+    for (int targetByte = 0; targetByte < 16; targetByte++)
     {
-        uint8_t bestKey = 0;
-        float maxPeak = 0.0f;
+        float bestPeak = 0.0f;       // 현재 바이트의 가장 큰 피크(1등)
+        float secondBestPeak = 0.0f; // 현재 바이트의 두 번째로 큰 피크(2등)
+        uint8_t bestKey = 0;         // 1등 피크일 때의 추측 키
 
         printf("Target Byte %2d 분석 중 ", targetByte);
 
-        // 모든 키 다 대입해서 찾아봄
+        // 키 추측 루프 (0x00 ~ 0xFF)
         for (int keyGuess = 0; keyGuess < 256; keyGuess++)
         {
             float* sum0 = (float*)calloc(NUM_POINT, sizeof(float));
@@ -110,11 +112,13 @@ void fileReadTest()
             int cnt0 = 0;
             int cnt1 = 0;
 
-            // 1000개의 파형 직접 검사
+            // 파형 순회 루프
             for (int traceIdx = 0; traceIdx < NUM_TRACE; traceIdx++)
             {
                 uint8_t intermediate = sbox[pt[traceIdx][targetByte] ^ keyGuess];
-                int bit = intermediate & 0x01; // LSB 비트 기준 분류
+
+                // MSB(0x80)를 기준으로 0, 1 집합 분류
+                int bit = (intermediate & 0x80) ? 1 : 0;
 
                 if (bit == 0)
                 {
@@ -128,7 +132,7 @@ void fileReadTest()
                 }
             }
 
-            // [3단계] 차분 분석
+            // 포인트별 차분 분석 및 현재 키의 최대 피크 탐색
             float currentKeyMax = 0.0f;
             if (cnt0 > 0 && cnt1 > 0)
             {
@@ -141,11 +145,16 @@ void fileReadTest()
                 }
             }
 
-            // 현재 추측 키의 피크가 가장 크면 갱신
-            if (currentKeyMax > maxPeak)
+            // 1등 피크(bestPeak)와 2등 피크(secondBestPeak) 저장
+            if (currentKeyMax > bestPeak)
             {
-                maxPeak = currentKeyMax;
+                secondBestPeak = bestPeak;   // 기존 1등을 2등으로
+                bestPeak = currentKeyMax;    // 새로운 1등 기록
                 bestKey = (uint8_t)keyGuess;
+            }
+            else if (currentKeyMax > secondBestPeak)
+            {
+                secondBestPeak = currentKeyMax; // 2등만 갱신
             }
 
             free(sum0);
@@ -153,13 +162,28 @@ void fileReadTest()
             if (keyGuess % 32 == 0) printf("."); // 진행률 표시
         }
 
-        // 정답 키와 해당 바이트의 최대 피크값 저장
+        // 정답 키와 해당 바이트의 최대 피크값 배열에 저장
         finalKey[targetByte] = bestKey;
-        bytePeaks[targetByte] = maxPeak;
-        printf(" 완료! (Key: %02X, Peak: %f)\n", bestKey, maxPeak);
+        bytePeaks[targetByte] = bestPeak;
+
+        // 개별 바이트 내부 Ratio 계산 및 출력
+        float ratio = 0.0f;
+        if (secondBestPeak > 0.0f)
+        {
+            ratio = bestPeak / secondBestPeak;
+        }
+
+        if (ratio >= 1.2f)
+        {
+            printf(" 완료! (Key: %02X, Ratio: %.2f) -> 올바른 키를 찾았습니다.\n", bestKey, ratio);
+        }
+        else
+        {
+            printf(" 완료! (Key: %02X, Ratio: %.2f) -> 다시 찾아보세요.\n", bestKey, ratio);
+        }
     }
 
-    // [최종 분석] 16개 바이트 중 1등 피크와 2등 피크 찾기
+    // [추가] 전체 16개 바이트 중 1등/2등 피크 비교 로직
     float globalMaxPeak = 0.0f;
     float globalSecondPeak = 0.0f;
     int maxByteIdx = 0;
@@ -182,36 +206,26 @@ void fileReadTest()
         }
     }
 
-    // 비율 계산
-    float ratio = 0.0f;
+    float globalRatio = 0.0f;
     if (globalSecondPeak > 0.0f)
     {
-        ratio = globalMaxPeak / globalSecondPeak;
+        globalRatio = globalMaxPeak / globalSecondPeak;
     }
 
     // [최종 결과 출력]
     printf("\n========================================\n");
-    printf("최종 복구된 16바이트 AES 키:\n");
-    for (int i = 0; i < 16; i++)
-    {
-        printf("%02X ", finalKey[i]);
-    }
-    printf("\n\n[신뢰도 판별]\n");
+    printf("최종 복구된 16바이트 AES 키 (HEX)  : ");
+    for (int i = 0; i < 16; i++) printf("%02X ", finalKey[i]);
+
+    printf("\n최종 복구된 16바이트 AES 키 (문자) : ");
+    for (int i = 0; i < 16; i++) printf("%c", finalKey[i]);
+
+    // 글로벌 피크 비교 블록 출력
+    printf("\n\n[전체 바이트 중 1등/2등 피크 비교]\n");
     printf("- 1등 피크 (Byte %d): %f\n", maxByteIdx, globalMaxPeak);
     printf("- 2등 피크 (Byte %d): %f\n", secondByteIdx, globalSecondPeak);
-    printf("- 비율 (1등/2등): %.2f -> ", ratio);
-
-    if (ratio >= 1.2f)
-    {
-        printf("올바른 키를 찾았습니다.\n");
-    }
-    else
-    {
-        printf("다시 찾아보세요.\n");
-    }
+    printf("- 비율 (1등/2등): %.2f\n", globalRatio);
     printf("========================================\n");
-
-
 
     // 동적할당 메모리 해제
     for (int traceIdx = 0; traceIdx < NUM_TRACE; traceIdx++)
