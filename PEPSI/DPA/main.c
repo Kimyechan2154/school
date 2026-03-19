@@ -183,35 +183,6 @@ void fileReadTest()
         }
     }
 
-    // [추가] 전체 16개 바이트 중 1등/2등 피크 비교 로직
-    float globalMaxPeak = 0.0f;
-    float globalSecondPeak = 0.0f;
-    int maxByteIdx = 0;
-    int secondByteIdx = 0;
-
-    for (int i = 0; i < 16; i++)
-    {
-        if (bytePeaks[i] > globalMaxPeak)
-        {
-            globalSecondPeak = globalMaxPeak; // 기존 1등을 2등으로
-            secondByteIdx = maxByteIdx;
-
-            globalMaxPeak = bytePeaks[i];     // 새로운 1등 기록
-            maxByteIdx = i;
-        }
-        else if (bytePeaks[i] > globalSecondPeak)
-        {
-            globalSecondPeak = bytePeaks[i];  // 1등보다는 작지만 기존 2등보다는 클 때
-            secondByteIdx = i;
-        }
-    }
-
-    float globalRatio = 0.0f;
-    if (globalSecondPeak > 0.0f)
-    {
-        globalRatio = globalMaxPeak / globalSecondPeak;
-    }
-
     // [최종 결과 출력]
     printf("\n========================================\n");
     printf("최종 복구된 16바이트 AES 키 (HEX)  : ");
@@ -220,12 +191,6 @@ void fileReadTest()
     printf("\n최종 복구된 16바이트 AES 키 (문자) : ");
     for (int i = 0; i < 16; i++) printf("%c", finalKey[i]);
 
-    // 글로벌 피크 비교 블록 출력
-    printf("\n\n[전체 바이트 중 1등/2등 피크 비교]\n");
-    printf("- 1등 피크 (Byte %d): %f\n", maxByteIdx, globalMaxPeak);
-    printf("- 2등 피크 (Byte %d): %f\n", secondByteIdx, globalSecondPeak);
-    printf("- 비율 (1등/2등): %.2f\n", globalRatio);
-    printf("========================================\n");
 
     // 동적할당 메모리 해제
     for (int traceIdx = 0; traceIdx < NUM_TRACE; traceIdx++)
