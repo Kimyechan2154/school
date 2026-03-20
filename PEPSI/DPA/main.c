@@ -3,6 +3,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <stdint.h>
+#include <time.h>  // 시간 측정을 위한 헤더 추가
 
 #include "params.h"
 #include "file_read.h"
@@ -46,7 +47,7 @@ void fileReadTest()
 
     // 동적할당(배열이 크기 때문에 추천), 정적 배열로 해도 됩니다.
     // calloc는 0으로 초기화 하고 메모리 공간을 가져옴
-    pt = (uint8_t**)calloc(NUM_TRACE, sizeof(uint8_t*)); 
+    pt = (uint8_t**)calloc(NUM_TRACE, sizeof(uint8_t*));
     trace = (float**)calloc(NUM_TRACE, sizeof(float*));
     for (int traceIdx = 0; traceIdx < NUM_TRACE; traceIdx++)
     {
@@ -84,7 +85,11 @@ void fileReadTest()
     {
         printf("%f ", trace[0][pointIdx]);
     }
-    printf("\n"); 
+    printf("\n");
+
+    // 수행 시간 측정 시작
+    double start, end;
+    start = (double)clock() / CLOCKS_PER_SEC;
 
     //dpa 구현 시각화(파이선으로 10개정도)
 
@@ -183,6 +188,9 @@ void fileReadTest()
         }
     }
 
+    // 수행 시간 측정 종료
+    end = (((double)clock()) / CLOCKS_PER_SEC);
+
     // [최종 결과 출력]
     printf("\n========================================\n");
     printf("최종 복구된 16바이트 AES 키 (HEX)  : ");
@@ -191,6 +199,9 @@ void fileReadTest()
     printf("\n최종 복구된 16바이트 AES 키 (문자) : ");
     for (int i = 0; i < 16; i++) printf("%c", finalKey[i]);
 
+    // 프로그램 수행 시간 출력
+    printf("\n\n프로그램 수행 시간 : %lf 초\n", (end - start));
+    printf("========================================\n");
 
     // 동적할당 메모리 해제
     for (int traceIdx = 0; traceIdx < NUM_TRACE; traceIdx++)
@@ -201,8 +212,6 @@ void fileReadTest()
     free(pt);
     free(trace);// 오류를 막기위해 반드시 해줘야함
 }
-
-
 
 int main()
 {
