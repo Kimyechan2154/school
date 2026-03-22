@@ -1,3 +1,4 @@
+#define _CRT_SECURE_NO_WARNINGS
 #include <stdio.h>
 #include <memory.h>
 
@@ -30,14 +31,28 @@ int reflector(int input) {
 
 int plugboard(int* plug, int input)
 {
-    if (plug[input] == -1)
+    if (plug[input] == -1) //플러그 연결 안됐으면 그대로 출력 내보내기
     {
         return input;
     }
-    return plug[input];
+    return plug[input]; //연결 됐으면 해당 정수 반환
 }
 
 int main() {
+    int N = 0;
+    int Plug[26] = { 0, };
+    memset(Plug, -1, sizeof(Plug)); //나중에 plugboard 입력이 들어왔을때 -1이면 그대로 다시 출력(-1로 전체 초기화)
+    printf("[plugboard] 몇개?: ");
+    scanf("%d", &N);
+
+    for (int i = 0; i < N; i++)
+    {
+        char buffer[2] = { 0, };
+        printf("[plugboard](%d) ? <-> ?", i + 1);
+        scanf(" %c %c", &buffer[0], &buffer[1]);
+        Plug[(int)(buffer[0] - 97)] = (int)(buffer[1] - 97); //버퍼에 들어온 알파벳 입력을 아스키에서 정수형으로 변환해서 기입.
+        Plug[(int)(buffer[1] - 97)] = (int)(buffer[0] - 97); //양방향 변환을 위한 반대 경로 추가.
+    }
     char letter = 0;
     printf("알파벳 소문자 한 개를 입력하세요 (a-z): ");
 
@@ -52,35 +67,36 @@ int main() {
         return 0;
     }
 
-    int N = 0;
-    int Plug[26] = { 0, };
-    memset(Plug, -1, 26); //나중에 plugboard 입력이 들어왔을때 -1이면 그대로 다시 출력
-    printf("[plugboard] 몇개?: ");
-    scanf("%d", &N);
-    char buffer[2] = { 0, };
-
-    for (int i = 0; i < N; i++)
-    {
-        printf("[plugboard] ? <-> ?");
-        scanf("%c %c", &buffer[0], &buffer[1]);
-        Plug[buffer[0] - 97] = buffer[1] - 97;
-        Plug[buffer[1] - 97] = buffer[0] - 97;
-    }
 
     // --- 암호화 경로 (Signal Path) ---
 
+    //0. 입력 후 플러그보드 통과
+    input = plugboard(Plug, input);
+    printf("%c -> ", (char)(input + 97));
+
     // 1. Forward Pass (우측 로터 -> 좌측 로터 순서)
     int pass1 = rotor(input, WIRING_3, 0); // Rotor III
+    printf("%c -> ", (char)(pass1 + 97));
     int pass2 = rotor(pass1, WIRING_2, 0); // Rotor II
+    printf("%c -> ", (char)(pass2 + 97));
     int pass3 = rotor(pass2, WIRING_1, 0); // Rotor I
+    printf("%c -> ", (char)(pass3 + 97));
 
     // 2. Reflection (유턴)
     int reflected = reflector(pass3);
+    printf("%c -> ", (char)(reflected + 97));
 
     // 3. Backward Pass (좌측 로터 -> 우측 로터 순서)
     int pass4 = rotor(reflected, WIRING_1, 1); // Rotor I Inverse
+    printf("%c -> ", (char)(pass4 + 97));
     int pass5 = rotor(pass4, WIRING_2, 1);     // Rotor II Inverse
+    printf("%c -> ", (char)(pass5 + 97));
     int pass6 = rotor(pass5, WIRING_3, 1);     // Rotor III Inverse
+    printf("%c -> ", (char)(pass6 + 97));
+
+    //4. 암호화 후 다시 플러그보드 통과
+    pass6 = plugboard(Plug, pass6);
+    printf("%c\n", (char)(pass6 + 97));
 
     // 출력 처리: 숫자를 다시 문자로 변환 (+97)
     printf("입력: %c (정수: %d) -> 출력: %c (정수: %d)\n", letter, input, (char)(pass6 + 97), pass6);
