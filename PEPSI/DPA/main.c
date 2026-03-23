@@ -8,6 +8,11 @@
 #include "params.h"
 #include "file_read.h"
 
+// ---- [최적화] SPA 분석을 통해 찾아낸 SubBytes(S-box) 연산 구간 ----
+#define START_POINT 0     // 분석 시작 포인트
+#define END_POINT   3000  // 분석 종료 포인트
+// -----------------------------------------------------------------
+
 const uint8_t sbox[256] = {
     0x63, 0x7c, 0x77, 0x7b, 0xf2, 0x6b, 0x6f, 0xc5, 0x30, 0x01, 0x67, 0x2b, 0xfe, 0xd7, 0xab, 0x76,
     0xca, 0x82, 0xc9, 0x7d, 0xfa, 0x59, 0x47, 0xf0, 0xad, 0xd4, 0xa2, 0xaf, 0x9c, 0xa4, 0x72, 0xc0,
@@ -29,24 +34,19 @@ const uint8_t sbox[256] = {
 
 void fileReadTest()
 {
-    //부호없는 8비트짜리 변수 pt를 선언하고 pt의 이중포인터 값을 초기화 하여 평문 데이터를 저장할 수 있게 만든다
-    uint8_t** pt = NULL; //평문 데이터를 저장할 이중 포인터 변수 선언, 초기화
-    float** trace = NULL; //전력 파형 데이터
-    FILE* ptFile = fopen(PT_PATH, "rt");//평문, 암호문은 텍스트로 연다.
-    FILE* traceFile = fopen(TRACE_PATH, "rb");//전력 파형은 바이너리로 연다.
+    uint8_t** pt = NULL;
+    float** trace = NULL;
+    FILE* ptFile = fopen(PT_PATH, "rt");
+    FILE* traceFile = fopen(TRACE_PATH, "rb");
 
-    // 헤더 이후로 위치 이동 순수 데이터만 읽게 함
     fseek(traceFile, 32, SEEK_CUR);
 
-    // file 예외 처리
     if (traceFile == NULL || ptFile == NULL)
     {
         printf("file open error\n");
         return;
     }
 
-    // 동적할당(배열이 크기 때문에 추천), 정적 배열로 해도 됩니다.
-    // calloc는 0으로 초기화 하고 메모리 공간을 가져옴
     pt = (uint8_t**)calloc(NUM_TRACE, sizeof(uint8_t*));
     trace = (float**)calloc(NUM_TRACE, sizeof(float*));
     for (int traceIdx = 0; traceIdx < NUM_TRACE; traceIdx++)
@@ -55,20 +55,18 @@ void fileReadTest()
         trace[traceIdx] = (float*)calloc(NUM_POINT, sizeof(float));
     }
 
-    // 평문 파일 읽기, 예외처리
     if (ptFileRead(pt, ptFile) != 0)
     {
         printf("ptFileRead error\n");
         return;
     }
 
-    // 전력 파일 읽기, 예외처리
     if (traceFileRead(trace, traceFile) != 0)
     {
         printf("traceFileRead error\n");
         return;
     }
-    // 파일 닫기
+
     fclose(traceFile);
     fclose(ptFile);
 
@@ -87,18 +85,27 @@ void fileReadTest()
     }
     printf("\n");
 
+    // 파이썬 시각화를 위해 trace[0]을 txt 파일로 저장
+    FILE* f_out = fopen("trace0.txt", "w");
+    if (f_out != NULL)
+    {
+        for (int p = 0; p < NUM_POINT; p++)
+        {
+            fprintf(f_out, "%f\n", trace[0][p]);
+        }
+        fclose(f_out);
+        printf("\n[SPA 준비] trace0.txt 파일 저장 완료!\n");
+    }
+
     // 수행 시간 측정 시작
     double start, end;
     start = (double)clock() / CLOCKS_PER_SEC;
 
-    //dpa 구현 시각화(파이선으로 10개정도)
-
     // 전체 16바이트 정답 키를 저장할 배열
     uint8_t finalKey[16] = { 0, };
-    // [추가] 각 바이트의 최고 피크값을 저장할 배열
-    float bytePeaks[16] = { 0.0f, };
 
-    printf("\n[전체 16바이트 DPA 분석 시작 (MSB 모델)]\n");
+    printf("\n[전체 16바이트 DPA 분석 시작 (MSB 모델 & SPA 결합 최적화)]\n");
+    printf("- 타겟 분석 구간: %d ~ %d Points\n\n", START_POINT, END_POINT);
 
     // 타겟 바이트 루프 (0번 ~ 15번 바이트)
     for (int targetByte = 0; targetByte < 16; targetByte++)
@@ -127,12 +134,14 @@ void fileReadTest()
 
                 if (bit == 0)
                 {
-                    for (int pointIdx = 0; pointIdx < NUM_POINT; pointIdx++) sum0[pointIdx] += trace[traceIdx][pointIdx];
+                    // [최적화 적용] SubBytes 구간(START_POINT ~ END_POINT)만 연산
+                    for (int pointIdx = START_POINT; pointIdx < END_POINT; pointIdx++) sum0[pointIdx] += trace[traceIdx][pointIdx];
                     cnt0++;
                 }
                 else
                 {
-                    for (int pointIdx = 0; pointIdx < NUM_POINT; pointIdx++) sum1[pointIdx] += trace[traceIdx][pointIdx];
+                    // [최적화 적용] SubBytes 구간(START_POINT ~ END_POINT)만 연산
+                    for (int pointIdx = START_POINT; pointIdx < END_POINT; pointIdx++) sum1[pointIdx] += trace[traceIdx][pointIdx];
                     cnt1++;
                 }
             }
@@ -141,7 +150,8 @@ void fileReadTest()
             float currentKeyMax = 0.0f;
             if (cnt0 > 0 && cnt1 > 0)
             {
-                for (int pointIdx = 0; pointIdx < NUM_POINT; pointIdx++)
+                // [최적화 적용] 차이를 계산하고 피크를 찾는 과정도 SubBytes 구간만 탐색
+                for (int pointIdx = START_POINT; pointIdx < END_POINT; pointIdx++)
                 {
                     float diff = (sum1[pointIdx] / cnt1) - (sum0[pointIdx] / cnt0);
                     if (diff < 0) diff = -diff; // 절댓값 처리
@@ -167,9 +177,8 @@ void fileReadTest()
             if (keyGuess % 32 == 0) printf("."); // 진행률 표시
         }
 
-        // 정답 키와 해당 바이트의 최대 피크값 배열에 저장
+        // 정답 키 배열에 저장
         finalKey[targetByte] = bestKey;
-        bytePeaks[targetByte] = bestPeak;
 
         // 개별 바이트 내부 Ratio 계산 및 출력
         float ratio = 0.0f;
@@ -210,12 +219,11 @@ void fileReadTest()
         free(trace[traceIdx]);
     }
     free(pt);
-    free(trace);// 오류를 막기위해 반드시 해줘야함
+    free(trace);
 }
 
 int main()
 {
     fileReadTest();
-
     return 0;
 }
