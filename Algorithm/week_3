@@ -1,0 +1,184 @@
+#define _CRT_SECURE_NO_WARNINGS
+
+#include <stdio.h>
+#include <assert.h>
+
+
+void exercise0()
+{
+	FILE* fp = NULL;
+
+	fp = fopen("data0.txt", "wt");
+
+	if (fp == NULL) {
+		fprintf(stderr, "fopen() error\n");
+	}
+
+	fprintf(fp, "Hello, World as %d!!!\n", 3000);
+
+	if (fp != NULL) {
+		fclose(fp);
+	}
+}
+
+void exercise1()
+{
+	FILE* fp = NULL;
+	int cnt_i;
+	int data[5] = { 0x00, };
+
+	printf("Input 5numbers:\n");
+	for (cnt_i = 0; cnt_i < 5; cnt_i++)
+	{
+		scanf("%d", &data[cnt_i]);
+	}
+	printf("Writte 5 number to file\n");
+
+	fp = fopen("data0.txt", "w");
+
+	if (fp == NULL) {
+		fprintf(stderr, "fopen() error\n");
+	}
+
+	for (cnt_i = 0; cnt_i < 5; cnt_i++)
+	{
+		fprintf(fp, "%d\n", data[cnt_i]);
+	}
+
+
+	if (fp != NULL) {
+		fclose(fp);
+	}
+}
+
+
+void exercise2()
+{
+	FILE* fp = NULL;
+	int cnt_i;
+	int data[5] = { 0x00, };
+
+	printf("Reading 5numbers:\n");
+	
+	fp = fopen("data0.txt", "r");
+
+	if (fp == NULL) {
+		fprintf(stderr, "fopen() error\n");
+	}
+
+	for (cnt_i = 0; cnt_i < 5; cnt_i++)
+	{
+		fscanf(fp, "%d", &data[cnt_i]);
+		printf("%d\n", data[cnt_i]);
+	}
+
+
+	if (fp != NULL) {
+		fclose(fp);
+	}
+}
+
+void exercise3()
+{
+	FILE* fp = NULL;
+	char buffer[128] = { 0x00, };
+
+	fp = fopen("string.txt", "wt");
+
+	if (fp == NULL) {
+		fprintf(stderr, "fopen() error\n");
+		return;
+	}
+
+	printf("문장 입력\n");
+
+	if (fgets(buffer, sizeof(buffer), stdin) != NULL) {
+		fputs(buffer, fp);
+	}
+
+	if (fp != NULL) {
+		fclose(fp);
+	}
+
+	fp = fopen("string.txt", "rt");
+	if (fp == NULL) {
+		fprintf(stderr, "fopen() error\n");
+		return;
+	}
+
+	printf("입력한 문장은:\n");
+	if (fgets(buffer, sizeof(buffer), fp) != NULL) {
+		fputs(buffer, stdout);
+	}
+
+}
+
+void exercise4()
+{
+	FILE *fp_src = NULL;
+	FILE *fp_dst = NULL;
+	char buf[128];
+
+	fp_src = fopen("src.txt", "rt");
+	fp_dst = fopen("dst.txt", "wt");
+
+	assert(fp_src != NULL);
+	assert(fp_dst != NULL);
+
+	printf("복사 시작\n");
+	while (fgets(buf, sizeof(buf), fp_src) != NULL) {
+		fputs(buf, fp_dst);
+	}
+	printf("복사 완료\n");
+
+	if (fp_src != NULL) {
+		fclose(fp_src);
+	}
+	if(fp_dst != NULL) {
+		fclose(fp_dst);
+	}
+}
+
+void exercise5() 
+{
+	FILE* wfp = NULL;
+	FILE* ifp = NULL;
+	char buf[128] = { 0x00, };
+
+	wfp = fopen("test.txt", "w");
+	assert(wfp != NULL); //코딩중 오류
+
+	fprintf(wfp, "Hello, world\n");//파일에 글 저장
+
+	if (wfp != NULL) //프로그램 돌아가는중 오류
+	{
+		fclose(wfp);
+	}
+
+	ifp = fopen("test.txt", "r");
+	assert(ifp != NULL);
+
+	fgets(buf, sizeof(buf), ifp); // 
+	
+	printf("[First]\n");
+	printf("Read: %s", buf);
+
+
+
+}
+
+
+int main() {
+	//exercise0();
+	
+	//exercise1();
+	
+	//exercise2();
+
+	//exercise3();
+
+	exercise4();
+
+
+	return 0;
+}
