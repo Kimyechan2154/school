@@ -174,8 +174,9 @@ typedef struct _PROFILE_ {
 	char name[32];
 	double grade;
 	int engilsh;
-}PROFILE;
+}PROFILE; // PROFILE 이라는 구조체를 선언한
 
+// void로 불러와서 sp 라는 변수를 만들어서* 로 구조체에 저장하는거 까지는 알겠는데 int size는 나중에 이 함수를 사용할때 받아드릴 학생 수를 작성하는 공간으로 변수 선언
 void input_data(PROFILE* sp, int size)
 {
 	int i;
@@ -209,8 +210,8 @@ void week1_example_4() {
 
 //실습 5
 
-#define INCREASING  1
-#define DECREASING  2
+#define INCREASING  1 //컴퓨터가 그냥 숫자 1로 이해함 내가 오름차순으로 코드 작성해줌
+#define DECREASING  2 //내림차순
 
 #define NAME        1
 #define ID          2
@@ -234,10 +235,10 @@ void insertionSort(STUDENT data[], int size, int dir, int type)
 		{
 			key = data[cnt_i];
 
-			//key보다 더 작은 값을 찾을 때까지 계속 수행
+			//key보다 더 작은 값을 찾을 때까지 계속 수행 키는 가장 큰거부터 내려옴
 			for (cnt_j = cnt_i - 1; cnt_j >= 0; cnt_j--) {
-				if (type == NAME) {
-					if (strcmp(data[cnt_j].name, key.name) <= 0) {
+				if (type == NAME) { //이름은 strcmp 함수를 이용해 앞에서부터 한글자씩 아스키 코드 값으로 비교함
+					if (strcmp(data[cnt_j].name, key.name) <= 0) { 
 						break;
 					}
 				}
@@ -255,7 +256,7 @@ void insertionSort(STUDENT data[], int size, int dir, int type)
 				}
 
 				data[cnt_j + 1] = data[cnt_j];
-			}
+			} //name, id, height중 하나라도 그 전값도 작으면 밀어내고 새로 저장됨 따라서 오름차순
 			data[cnt_j + 1] = key;
 		}
 	}
@@ -292,7 +293,7 @@ void insertionSort(STUDENT data[], int size, int dir, int type)
 }
 
 void week1_example_5() {
-	STUDENT stu[5] = { {0x00, }, };
+	STUDENT stu[5] = { {0x00, }, }; //첫번째 {}에서는 구조체 초기화 안쪽의 {}는 내부배열 초기화
 	int cnt_i;
 
 	printf("[학생 정보 입력]\n");
@@ -354,7 +355,7 @@ void insertionSort2(STUDENT* data[], int size, int dir, int type)
 
 			//key보다 더 작은 값을 찾을 때까지 계속 수행
 			for (cnt_j = cnt_i - 1; cnt_j >= 0; cnt_j--) {
-				if (type == NAME) {
+				if (type == NAME) { //*로 주소값을 불러오기 때문에 ->로 주소 값에 저장함
 					if (strcmp(data[cnt_j]->name, key->name) <= 0) {
 						break;
 					}
@@ -466,10 +467,6 @@ void week1_example_6()
 }
 
 
-
-
-
-
 int main() {
 	//week1_example_1();
 
@@ -482,8 +479,6 @@ int main() {
 	//week1_example_5();
 
 	//week1_example_6();
-
-	//c1629();
 	
 	return 0;
 }
