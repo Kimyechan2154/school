@@ -1,14 +1,22 @@
-import numpy as np
 import matplotlib.pyplot as plt
+import numpy as np
 
-# 1. 텍스트 파일에서 전력 데이터 읽어오기 (절대 경로 적용)
-trace = np.loadtxt(r"C:\Users\kimye\OneDrive\Desktop\학교\PEPSI\PEPSI_DPA과제\DPA_main\DPA_main\trace0.txt")
+# trace0.txt 파일을 로드 (경로 확인 필요)
+trace = np.loadtxt('trace0.txt')
 
-# 2. 파형 시각화 (SPA)
-plt.figure(figsize=(15, 5))
-plt.plot(trace, linewidth=0.5, color='blue')
-plt.title('SPA - Trace 0 Power Consumption')
-plt.xlabel('Point Index (0 ~ 14863)')
-plt.ylabel('Power Value')
-plt.grid(True)
+plt.figure(figsize=(15, 6))
+plt.plot(trace, color='blue', linewidth=0.7, label='Power Trace')
+
+# 1라운드 및 S-box 구간 집중 확대
+plt.xlim(0, 3000) 
+
+# 시각적 가이드 추가 (PPT 발표 시 매우 유용함)
+plt.axvspan(1500, 2500, color='red', alpha=0.2, label='SubBytes (ROI)')
+
+plt.title('AES 1st Round SPA Analysis (0 - 3000 Points)', fontsize=15)
+plt.xlabel('Sample Points', fontsize=12)
+plt.ylabel('Amplitude', fontsize=12)
+plt.grid(True, which='both', linestyle='--', alpha=0.5)
+plt.legend()
+
 plt.show()
