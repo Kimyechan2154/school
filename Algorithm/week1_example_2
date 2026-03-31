@@ -7,229 +7,237 @@
 
 //실습 1
 
-//void exercise1()
-//{
-//	int num = 20;
-//	void* ptr = &num; //형변환
-//
-//	printf("address of num: %p\n", ptr);
-//
-//}
-//
-////실습 1-2
-//
-//int* testMem1()
-//{
-//	int data[10] = { 0x00, };
-//	int cnt_i;
-//
-//	for (cnt_i = 0; cnt_i < 10; cnt_i++) {
-//		data[cnt_i] = cnt_i;
-//		printf("%d in testMem1\n", data[cnt_i]);
-//	}
-//	return data;
-//}
-//
-//int* testMem2()
-//{
-//	int* data = NULL;
-//	int cnt_i;
-//
-//	data = (int*)calloc(10, sizeof(int));
-//	for (cnt_i = 0; cnt_i < 10; cnt_i++) {
-//		data[cnt_i] = cnt_i;
-//		printf("%d in testMem1\n", data[cnt_i]);
-//	}
-//	return data;
-//}
-//
-//
-//int* exercise2()
-//{
-//	int* data = NULL;
-//	int cnt_i;
-//	data = testMem1();
-//	printf("\n");
-//	for (cnt_i = 0; cnt_i < 10; cnt_i++) {
-//		printf("%d in exercise2\n", data[cnt_i]);
-//	}
-//	printf("\n");
-//
-//	data = testMem2();
-//	printf("\n");
-//	for (cnt_i = 0; cnt_i < 10; cnt_i++) {
-//		printf("%d in exercise2\n", data[cnt_i]);
-//	}
-//	free(data);
-//}
-//
-////실습 2
-//
-//void generate(int data[], int mod, int size) 
-//{
-//	int cnt_i;
-//	srand(time(NULL));
-//	for (cnt_i = 0; cnt_i < 10; cnt_i++) {
-//		data[cnt_i] = rand() % mod;
-//	}
-//}
-//
-//int getSum(int data[], int size)
-//{
-//	int cnt_i;
-//	int sum = 0;
-//	for (cnt_i = 0; cnt_i < size; cnt_i++) {
-//		sum += data[cnt_i];
-//	}
-//	return sum;
-//}
-//
-//void printArray(int data[], int size)
-//{
-//	int cnt_i;
-//	
-//	for (cnt_i = 0; cnt_i < size; cnt_i++) {
-//		if ((cnt_i != 0) && !(cnt_i % 8)) {
-//			printf("\n");
-//		}
-//		printf("%6d", data[cnt_i]);
-//	}
-//	printf("\n");
-//}
-//void exercise3()
-//{
-//	int* p;
-//	int cnt;
-//	int sum;
-//
-//	printf(" 입력할 정수의 개수? ");
-//	scanf("%d", &cnt);
-//
-//	p = (int*)calloc(10, sizeof(int));
-//	if (p == NULL) {
-//		printf("실패 \n");
-//		return;
-//	}
-//
-//	generate(p, 100, cnt);
-//	printArray(p, cnt);
-//	sum = getSum(p, cnt);
-//
-//	printf("합: %d\n", sum);
-//
-//	if (p != NULL) {
-//		return;
-//	}
-//}
-//
-////실습 3-1
-//
-//void exercise4() {
-//	char greet[3][20] = { {0x00, }, }; //고정된 크기 사용해 공간 낭비 발생
-//	int cnt_i;
-//
-//	printf("[2차원 배열]\n");
-//	for (cnt_i = 0; cnt_i < 3; cnt_i++) {
-//		printf("문장 입력:\n");
-//		gets(greet[cnt_i]);
-//	}
-//
-//	printf("\n 입력된 문장은: \n");
-//	for (cnt_i = 0; cnt_i < 3; cnt_i++) {
-//		printf("%s\n", greet[cnt_i]);
-//	}
-//
-//	char buffer[32];
-//	char *greet2[3] = {0x00, }; //포인터 배열을 이용해 문장의 길이에 맞춰 메모리 할당
-//	char **greet3 = NULL;
-//	char temp;
-//	int len;
-//	int num0fStr;
-//
-//	printf("[동적 할당 이용 1]\n");
-//	for (cnt_i = 0; cnt_i < 3; cnt_i++) {
-//		printf("문장 입력\n");
-//		gets(buffer);
-//		len = strlen(buffer);
-//		greet2[cnt_i] = (char*)calloc(len + 1, sizeof(char));
-//		strncpy(greet2[cnt_i], buffer, len + 1);
-//	}
-//	printf("\n 입력된 문장.\n");
-//	for (cnt_i = 0; cnt_i < 3; cnt_i++) {
-//		printf("%s\n", greet2[cnt_i]);
-//	}
-//
-//	for (cnt_i = 0; cnt_i < 3; cnt_i++) {
-//		free(greet2[cnt_i]);
-//	}
-//	
-//	printf("[동적 2]\n");
-//	printf("몇개의 문장 입력: \n");
-//
-//	scanf("%d%c", &num0fStr, &temp);
-//	greet3 = (char**)calloc(num0fStr, sizeof(char*)); //문장의 개수마저 동적 관리
-//
-//	for (cnt_i = 0; cnt_i < num0fStr; cnt_i++) {
-//		printf("문장 입력\n");
-//		gets(buffer);
-//		len = strlen(buffer);
-//		greet3[cnt_i] = (char*)calloc(len + 1, sizeof(char));
-//		strncpy(greet3[cnt_i], buffer, len + 1);
-//	}
-//	printf("\n 입력된 문장.\n");
-//	for (cnt_i = 0; cnt_i < num0fStr; cnt_i++) {
-//		printf("%s\n", greet3[cnt_i]);
-//	}
-//	for (cnt_i = 0; cnt_i < num0fStr; cnt_i++) {
-//		free(greet3[cnt_i]);
-//	}
-//	free(greet3);
-//}
-//
-////실습 3-2
-//void exercise3_2() 
-//{
-//	int row, col;
-//	int **matrix = NULL;
-//	int cnt_i, cnt_j;
-//
-//	srand(time(NULL));
-//
-//	printf("행, 열 입력.\n");
-//	scanf("%d%d", &row, &col);
-//
-//	matrix = (int**)calloc(row, sizeof(int*));
-//
-//
-//	for (cnt_i = 0; cnt_i < row; cnt_i++) {
-//		// 각 행(세로) 요소에 실제 정수를 저장할 가로 공간을 할당해야 함 [cite: 870, 887]
-//		matrix[cnt_i] = (int*)calloc(col, sizeof(int));
-//			return;
-//	}
-//
-//	for (cnt_i = 0; cnt_i < row; cnt_i++)
-//	{
-//		for (cnt_j = 0; cnt_j < col; cnt_j++)
-//		{
-//			matrix[cnt_i][cnt_j] = rand()%32;
-//		}
-//	}
-//
-//	printf("[matrix]\n");
-//	for (cnt_i = 0; cnt_i < row; cnt_i++)
-//	{
-//		for (cnt_j = 0; cnt_j < col; cnt_j++)
-//		{
-//			printf("%d\t", matrix[cnt_i][cnt_j]);
-//		}
-//		printf("\n");
-//	}
-//	for (cnt_i = 0; cnt_i < row; cnt_i++)
-//	{
-//		free(matrix[cnt_i]);
-//	}
-//	free(matrix);
-//}
+void exercise1()
+{
+	int num = 20;
+	void* ptr = &num; //형변환
+
+	printf("address of num: %p\n", ptr);
+
+}
+
+// [실습 1-2] 정적 할당(Stack)과 동적 할당(Heap)의 차이 관찰
+
+// 1. 정적 할당 배열을 반환하려는 시도
+int* testMem1()
+{
+	// 함수 내부(Stack)에 고정된 크기의 배열 선언
+	int data[10] = { 0x00, };
+	int cnt_i;
+
+	for (cnt_i = 0; cnt_i < 10; cnt_i++) {
+		data[cnt_i] = cnt_i;
+		printf("%d in testMem1\n", data[cnt_i]);
+	}
+	// 지역 변수의 주소를 반환함 (매우 위험한 작업)
+	return data;
+}
+
+// 2. 동적 할당 배열을 사용하여 안전하게 반환
+int* testMem2()
+{
+	int* data = NULL;
+	int cnt_i;
+
+	// calloc을 사용해 힙(Heap) 영역에 메모리 할당과 동시에 모든 공간을 0으로 자동 초기화함
+	data = (int*)calloc(10, sizeof(int));
+
+	for (cnt_i = 0; cnt_i < 10; cnt_i++) {
+		data[cnt_i] = cnt_i;
+		printf("%d in testMem2\n", data[cnt_i]);
+	}
+	// 힙에 생성된 메모리는 함수가 끝나도 유지되므로 주소 반환이 안전함 
+	return data;
+}
+
+void exercise1_2() // 원본 exercise1_2 역할
+{
+	int* data = NULL;
+	int cnt_i;
+
+	// testMem1은 종료 후 메모리가 사라지므로 data는 '쓰레기 주소'를 가리킴
+	data = testMem1();
+	printf("\n");
+	for (cnt_i = 0; cnt_i < 10; cnt_i++) {
+		printf("%d in exercise2\n", data[cnt_i]); //쓰레기 값이 출력됨 
+	}
+
+	// testMem2는 힙 영역을 사용하여 데이터가 보존됨
+	data = testMem2();
+	printf("\n");
+	for (cnt_i = 0; cnt_i < 10; cnt_i++) {
+		printf("%d in exercise2\n", data[cnt_i]);
+	}
+	free(data);
+}
+
+//실습 2
+
+void generate(int data[], int mod, int size) 
+{
+	int cnt_i;
+	srand(time(NULL));
+	for (cnt_i = 0; cnt_i < 10; cnt_i++) {
+		data[cnt_i] = rand() % mod;
+	}
+}
+
+int getSum(int data[], int size)
+{
+	int cnt_i;
+	int sum = 0;
+	for (cnt_i = 0; cnt_i < size; cnt_i++) {
+		sum += data[cnt_i];
+	}
+	return sum;
+}
+
+void printArray(int data[], int size)
+{
+	int cnt_i;
+	
+	for (cnt_i = 0; cnt_i < size; cnt_i++) {
+		if ((cnt_i != 0) && !(cnt_i % 8)) {
+			printf("\n");
+		}
+		printf("%6d", data[cnt_i]);
+	}
+	printf("\n");
+}
+void exercise2()
+{
+	int* p;
+	int cnt;
+	int sum;
+
+	printf(" 입력할 정수의 개수? ");
+	scanf("%d", &cnt);
+
+	p = (int*)calloc(10, sizeof(int));
+	if (p == NULL) {
+		printf("실패 \n");
+		return;
+	}
+
+	generate(p, 100, cnt);
+	printArray(p, cnt);
+	sum = getSum(p, cnt);
+
+	printf("합: %d\n", sum);
+
+	if (p != NULL) {
+		return;
+	}
+}
+
+//실습 3-1
+
+void exercise3_1() {
+	char greet[3][20] = { {0x00, }, }; //고정된 크기 사용해 공간 낭비 발생
+	int cnt_i;
+
+	printf("[2차원 배열]\n");
+	for (cnt_i = 0; cnt_i < 3; cnt_i++) {
+		printf("문장 입력:\n");
+		gets(greet[cnt_i]);
+	}
+
+	printf("\n 입력된 문장은: \n");
+	for (cnt_i = 0; cnt_i < 3; cnt_i++) {
+		printf("%s\n", greet[cnt_i]);
+	}
+
+	char buffer[32];
+	char *greet2[3] = {0x00, }; //포인터 배열을 이용해 문장의 길이에 맞춰 메모리 할당
+	char **greet3 = NULL;
+	char temp;
+	int len;
+	int num0fStr;
+
+	printf("[동적 할당 이용 1]\n");
+	for (cnt_i = 0; cnt_i < 3; cnt_i++) {
+		printf("문장 입력\n");
+		gets(buffer);
+		len = strlen(buffer);
+		greet2[cnt_i] = (char*)calloc(len + 1, sizeof(char));
+		strncpy(greet2[cnt_i], buffer, len + 1);
+	}
+	printf("\n 입력된 문장.\n");
+	for (cnt_i = 0; cnt_i < 3; cnt_i++) {
+		printf("%s\n", greet2[cnt_i]);
+	}
+
+	for (cnt_i = 0; cnt_i < 3; cnt_i++) {
+		free(greet2[cnt_i]);
+	}
+	
+	printf("[동적 2]\n");
+	printf("몇개의 문장 입력: \n");
+
+	scanf("%d%c", &num0fStr, &temp);
+	greet3 = (char**)calloc(num0fStr, sizeof(char*)); //문장의 개수마저 동적 관리
+
+	for (cnt_i = 0; cnt_i < num0fStr; cnt_i++) {
+		printf("문장 입력\n");
+		gets(buffer);
+		len = strlen(buffer);
+		greet3[cnt_i] = (char*)calloc(len + 1, sizeof(char));
+		strncpy(greet3[cnt_i], buffer, len + 1);
+	}
+	printf("\n 입력된 문장.\n");
+	for (cnt_i = 0; cnt_i < num0fStr; cnt_i++) {
+		printf("%s\n", greet3[cnt_i]);
+	}
+	for (cnt_i = 0; cnt_i < num0fStr; cnt_i++) {
+		free(greet3[cnt_i]);
+	}
+	free(greet3);
+}
+
+//실습 3-2
+void exercise3_2() 
+{
+	int row, col;
+	int **matrix = NULL;
+	int cnt_i, cnt_j;
+
+	srand(time(NULL));
+
+	printf("행, 열 입력.\n");
+	scanf("%d%d", &row, &col);
+
+	matrix = (int**)calloc(row, sizeof(int*));
+
+
+	for (cnt_i = 0; cnt_i < row; cnt_i++) {
+		// 각 행(세로) 요소에 실제 정수를 저장할 가로 공간을 할당해야 함 [cite: 870, 887]
+		matrix[cnt_i] = (int*)calloc(col, sizeof(int));
+			return;
+	}
+
+	for (cnt_i = 0; cnt_i < row; cnt_i++)
+	{
+		for (cnt_j = 0; cnt_j < col; cnt_j++)
+		{
+			matrix[cnt_i][cnt_j] = rand()%32;
+		}
+	}
+
+	printf("[matrix]\n");
+	for (cnt_i = 0; cnt_i < row; cnt_i++)
+	{
+		for (cnt_j = 0; cnt_j < col; cnt_j++)
+		{
+			printf("%d\t", matrix[cnt_i][cnt_j]);
+		}
+		printf("\n");
+	}
+	for (cnt_i = 0; cnt_i < row; cnt_i++)
+	{
+		free(matrix[cnt_i]);
+	}
+	free(matrix);
+}
 
 //실습 3-3
 
@@ -529,6 +537,8 @@ int main()
 {
 	//exercise1();
 
+	exercise1_2();
+
 	//exercise2();
 
 	//exercise3();
@@ -537,7 +547,7 @@ int main()
 
 	//exercise3_3();
 
-	exercise4();
+	//exercise4();
 
 	getchar();
 	return 0;
