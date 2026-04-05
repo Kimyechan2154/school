@@ -4,6 +4,9 @@
 
 //실습 1
 
+#pragma once
+
+
 void week1_example_1() {
 
 	STUDENT stu1 = {"Seogchung Seo", 2019015,"Security", 38,"Seoul"};
@@ -22,7 +25,7 @@ void week1_example_1() {
 	scanf("%d", &stu1.age);
 
 	printf("학생1 주소입력 : "); // char addr 배열
-	scanf("%s", &stu1.addr);
+	scanf("%s", stu1.addr);
 
 	printf("\n");
 
@@ -176,7 +179,7 @@ typedef struct _PROFILE_ {
 	int engilsh;
 }PROFILE; // PROFILE 이라는 구조체를 선언한
 
-// void로 불러와서 sp 라는 변수를 만들어서* 로 구조체에 저장하는거 까지는 알겠는데 int size는 나중에 이 함수를 사용할때 받아드릴 학생 수를 작성하는 공간으로 변수 선언
+// void로 불러와서 sp 라는 변수를 만들어서* 로 구조체에 저장하는거 int size는 나중에 이 함수를 사용할때 받아드릴 학생 수를 작성하는 공간으로 변수 선언
 void input_data(PROFILE* sp, int size)
 {
 	int i;
@@ -468,7 +471,7 @@ void week1_example_6()
 
 
 int main() {
-	//week1_example_1();
+	week1_example_1();
 
 	//week1_example_2();
 
