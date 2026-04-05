@@ -3,12 +3,14 @@
 #include <stdio.h>
 #include <assert.h>
 
-
+//w 쓰기 r 읽기 a 추가
 void exercise0()
 {
 	FILE* fp = NULL;
 
+	//파일 만들어서 쓰기로 엶
 	fp = fopen("data0.txt", "wt");
+
 
 	if (fp == NULL) {
 		fprintf(stderr, "fopen() error\n");
@@ -20,6 +22,8 @@ void exercise0()
 		fclose(fp);
 	}
 }
+
+//실습1
 
 void exercise1()
 {
@@ -51,6 +55,7 @@ void exercise1()
 	}
 }
 
+//실습2
 
 void exercise2()
 {
@@ -67,16 +72,61 @@ void exercise2()
 	}
 
 	for (cnt_i = 0; cnt_i < 5; cnt_i++)
-	{
+	{// fscanf는 파일을 읽어서 프로그램 변수에 저장
 		fscanf(fp, "%d", &data[cnt_i]);
 		printf("%d\n", data[cnt_i]);
 	}
-
 
 	if (fp != NULL) {
 		fclose(fp);
 	}
 }
+
+//실습2-2
+
+void exercise2_2()
+{
+	FILE* fp = NULL;
+	char ch;
+	
+	//내용 작성
+	fp = fopen("data0.txt", "wt");
+
+	if (fp == NULL) {
+		fprintf(stderr, "fopen() error\n");
+		return;
+	}
+
+	printf("문장입력: \n");
+	while (1) {
+		ch = getchar(); //문자 하나 받아와 ch에 저장
+		if (ch == '\n') { //엔터시 입력 종료
+			break;
+		}
+		fputc(ch, fp); //ch에 담긴 문자 하나를 fp 파일에 저장
+	}
+
+	if (fp != NULL) {
+		fclose(fp);
+	}
+
+	//작성한 내용 읽기
+	fp = fopen("text.txt", "rt");
+	if (fp == NULL) {
+		fprintf(stderr, "fopen() error\n");
+		return;
+	}
+	printf("입력한 문장은:\n");
+	while (1) {
+		ch = fgetc(fp);
+		if (ch == EOF) { //EOF = -1
+			break;
+		}
+		printf("%c", ch);
+	}
+}
+
+//실습3
 
 void exercise3()
 {
@@ -92,8 +142,9 @@ void exercise3()
 
 	printf("문장 입력\n");
 
+	// buffer 안에 저장 sizeof(buffer) 배열의 크기 만큼, stdin키보드로 입력
 	if (fgets(buffer, sizeof(buffer), stdin) != NULL) {
-		fputs(buffer, fp);
+		fputs(buffer, fp); // 파일 내부에 저장
 	}
 
 	if (fp != NULL) {
@@ -113,6 +164,8 @@ void exercise3()
 
 }
 
+//실습4
+
 void exercise4()
 {
 	FILE *fp_src = NULL;
@@ -126,8 +179,10 @@ void exercise4()
 	assert(fp_dst != NULL);
 
 	printf("복사 시작\n");
+	/*fgets 함수를 이용해 fp_src안에 있는 내용을 
+	문자열 단위로 받아와 buf안에 저장 sizeof(buf) 초과 방지*/
 	while (fgets(buf, sizeof(buf), fp_src) != NULL) {
-		fputs(buf, fp_dst);
+		fputs(buf, fp_dst); //fp_dst안에 한글자식 저장
 	}
 	printf("복사 완료\n");
 
@@ -138,6 +193,8 @@ void exercise4()
 		fclose(fp_dst);
 	}
 }
+
+//실습5
 
 void exercise5() 
 {
@@ -155,15 +212,150 @@ void exercise5()
 		fclose(wfp);
 	}
 
+	//위에서 저장한 test.txt를 읽어옴
 	ifp = fopen("test.txt", "r");
 	assert(ifp != NULL);
 
-	fgets(buf, sizeof(buf), ifp); // 
+	fgets(buf, sizeof(buf), ifp);
 	
 	printf("[First]\n");
 	printf("Read: %s", buf);
 
+	if (ifp != NULL)
+	{
+		fclose(ifp);
+	}
 
+	wfp = fopen("test.txt", "a");
+	assert(wfp != NULL);
+
+	fprintf(wfp, "Hello, student!\n");
+	fprintf(wfp, "Good bye!");
+
+	if (wfp != NULL)
+	{
+		fclose(wfp);
+	}
+
+	ifp = fopen("test.txt", "r");
+	assert(ifp != NULL);
+	
+	printf("\n\n[2]\n");
+	while (!feof(ifp)) //feof = 파일 끝 이면 1 / file EOF
+	{
+		memset(buf, 0, sizeof(buf)); //buf 내용 0으로 초기화
+		fgets(buf, sizeof(buf), ifp);
+		printf("Read: %s\n", buf);
+	}
+
+	if (ifp != NULL)
+	{
+		fclose(ifp);
+	}
+}
+
+//실습5-2
+
+void exercise5_2()
+{
+	FILE* fp = NULL;
+	int cnt_i;
+	int data[5] = { 0x00, };
+
+	printf("5 numbers:\n");
+	for (cnt_i = 0; cnt_i < 5; cnt_i++) {
+		scanf("%d", &data[cnt_i]);
+	}
+
+	printf("Write 5 number.\n");
+
+	fp = fopen("data5.txt", "wt");
+	if (fp == NULL) {
+		fprintf(stderr, "fopen() error\n");
+	}
+
+	for (cnt_i = 0; cnt_i < 5; cnt_i++) {
+		//p 안에 data[cnt_i]값을 16진법으로 저장
+		fprintf(fp, "%08X\n", data[cnt_i]);
+	}
+
+	if (fp != NULL)
+	{
+		fclose(fp);
+	}
+}
+
+//실습 6
+
+void exercise6()
+{
+	char buf[] = "Hello world";
+	int data = 100;
+	FILE* bfp = NULL;
+	FILE* tfp = NULL;
+
+	bfp = fopen("exe6_binary.dat", "wb");
+	assert(bfp != NULL);
+
+	tfp = fopen("exe6_binary.dat", "wb");
+	assert(tfp != NULL);
+
+	//2진법으로 buf 안에 있는 내용을 sizeof(buf)크기 만큼 1번 bfp안에 저장
+	fwrite(buf, sizeof(buf), 1, bfp);
+	fwrite(&data, sizeof(buf), 1, bfp);
+
+	fprintf(tfp, "%s", buf);
+	fprintf(tfp, "%d", data);
+
+	if (bfp != NULL)
+	{
+		fclose(bfp);
+	}
+	if (tfp != NULL)
+	{
+		fclose(tfp);
+	}
+}
+
+//실습 8
+
+void exercise8()
+	{
+	int cnt_i;
+	int dataList[100] = { 0x00, };
+	int data = 0x00;
+	FILE* bfp = NULL;
+
+	bfp = fopen("exe7_binary.dat", "wb");
+	assert(bfp != NULL);
+
+	for (cnt_i = 0; cnt_i < 100; cnt_i++)
+	{
+		dataList[cnt_i] = cnt_i;
+	}
+
+	fwrite(dataList, sizeof(dataList), 1, bfp);
+	if (bfp != NULL)
+	{
+		fclose(bfp);
+	}
+
+	bfp = fopen("exe7_binary.dat", "rb");
+	assert(bfp != NULL);
+
+	//4바이트 크기의 50번째로 점프
+	fseek(bfp, 4 * (50 - 1), SEEK_SET);
+	fread(&data, sizeof(int), 1, bfp);
+	printf("%d\n", data);
+
+	if (bfp != NULL)
+	{
+		fclose(bfp);
+	}
+} 
+
+void exercise9()
+{
 
 }
 
@@ -177,8 +369,16 @@ int main() {
 
 	//exercise3();
 
-	exercise4();
+	//exercise4();
 
+	//exercise5();
 
+	//exercise5_2();
+
+	//exercise6();
+
+	//exercise8();
+
+	exercise9();
 	return 0;
 }
