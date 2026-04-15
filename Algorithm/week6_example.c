@@ -7,7 +7,7 @@
 
 #define STACK_SIZE 100
 
-//typedef int element; //element를 int 처럼 사용
+typedef int element; //element를 int 처럼 사용
 //
 ////실습 1-1
 //
@@ -284,364 +284,590 @@
 //
 //}
 
-#include <crtdbg.h>			// 메모리 누수를 확인하기 위해 CRT 디버그 함수 사용
-
-#define TRUE	1
-#define FALSE	0
-
-typedef char element;		// 스택 요소(element)의 자료형을 char로 정의
-
-typedef struct  stackNode {	// 스택의 노드를 구조체로 정의
-	element data;
-	struct stackNode* link;
-} stackNode;
-
-stackNode* top;				// 스택의 top 노드를 지정하기 위해 포인터 top 선언
-
-// 스택이 공백 상태인지 확인하는 연산
-int isEmpty() {
-	if (top == NULL) return TRUE;
-	else return FALSE;
-}
-
-// 스택의 top에 원소를 삽입하는 연산
-// top 노드는 이전 top 노드를 가리키도록 해야함
-void push(element item) {
-	stackNode* temp = (stackNode*)calloc(1, sizeof(stackNode));
-	temp->data = item;
-	temp->link = top;		// 삽입 노드를 top의 위에 연결
-	top = temp;				// top 위치를 삽입 노드로 이동
-}
-
-// 스택의 top에서 원소를 삭제하는 연산
-element pop() {
-	element item;
-	stackNode* temp = top;
-
-	if (top == NULL) {		// 스택이 공백 리스트인 경우
-		printf("\n\n Stack is empty !\n");
-		return 0;
-	}
-	else {					// 스택이 공백 리스트가 아닌 경우
-		item = temp->data;
-		top = temp->link;	// top 위치를 삭제 노드 아래로 이동
-		free(temp);			// 삭제된 노드의 메모리 반환
-		return item;		// 삭제된 원소 반환
-	}
-}
-
-// 스택의 원소를 top에서 bottom 순서로 출력하는 연산
-void printStack() {
-	stackNode* p = top;
-	printf("\n STACK [ ");
-	while (p) {
-		printf("%c ", p->data);
-		p = p->link;
-	}
-	printf("] ");
-}
-
-// 수식의 괄호를 검사하는 연산
-int testPair(char* exp) {
-	char symbol, open_pair;
-	// char형 포인터 매개변수로 받은 수식 exp의 길이를 계산하여 length 변수에 저장
-	int i, length = strlen(exp); //문자열 길이 구하고
-	top = NULL;
-
-	for (i = 0; i < length; i++) {
-
-		printStack();
-
-		symbol = exp[i]; //문자열 하나씩 검증
-		switch (symbol) { //괄호 숫자 연산자 분류하는 함수
-			// (1) 왼쪽 괄호는 스택에 삽입
-		case '(':
-		case '[':
-		case '{':
-			push(symbol); break;
-			// (2) 오른쪽 괄호를 읽으면,
-		case ')':
-		case ']':
-		case '}':
-			if (top == NULL) return FALSE;
-			else {
-				// (2)-1 스택에서 마지막으로 읽은 괄호를 꺼냄
-				open_pair = pop();
-				// (2)-2 괄호 쌍이 맞는지 검사
-				if ((open_pair == '(' && symbol != ')') ||
-					(open_pair == '[' && symbol != ']') ||
-					(open_pair == '{' && symbol != '}'))
-					// (2)-3 괄호 쌍이 틀리면 수식 오류
-					return FALSE;
-				// (2)-4 괄호 쌍이 맞으면 다음 symbol 검사를 계속함
-				else break;
-			}
-		}
-	}
-	if (top == NULL) return TRUE;// 수식 검사를 마친 후 스택이 공백이면 1을 반환
-	else return FALSE;            // 공백이 아니면 0을 반환(수식 괄호 틀림)
-}
-
-/*
- * stack의 top 노드에서부터 0번째 index로 메모리를 해제함
- */
-void freeStack()
-{
-	stackNode* pre = NULL;
-	stackNode* cur = NULL;
-
-	pre = cur = top;
-	while (cur != NULL)
-	{
-		pre = cur;
-		cur = cur->link;
-		free(pre);
-		pre = NULL;
-	}
-}
-
-void exer3_bracket()
-{
-	char* express = "{(A+B)-3}*5+[{cos(x+y)+7}-1]*4";
-	printf("%s", express);
-
-	if (testPair(express) == 1)
-		printf("\n\n수식의 괄호가 맞게 사용되었습니다!");
-	else
-		printf("\n\n수식의 괄호가 틀렸습니다!");
-
-	getchar();
-}
-
-void main(void) {
-
-	exer3_bracket();
-	freeStack();
-}
-// EOF
-
-
+//#include <crtdbg.h>			// 메모리 누수를 확인하기 위해 CRT 디버그 함수 사용
+//
+//#define TRUE	1
+//#define FALSE	0
+//
+//typedef char element;		// 스택 요소(element)의 자료형을 char로 정의
+//
+//typedef struct  stackNode {	// 스택의 노드를 구조체로 정의
+//	element data;
+//	struct stackNode* link;
+//} stackNode;
+//
+//stackNode* top;				// 스택의 top 노드를 지정하기 위해 포인터 top 선언
+//
+//// 스택이 공백 상태인지 확인하는 연산
+//int isEmpty() {
+//	if (top == NULL) return TRUE;
+//	else return FALSE;
+//}
+//
+//// 스택의 top에 원소를 삽입하는 연산
+//// top 노드는 이전 top 노드를 가리키도록 해야함
+//void push(element item) {
+//	stackNode* temp = (stackNode*)calloc(1, sizeof(stackNode));
+//	temp->data = item;
+//	temp->link = top;		// 삽입 노드를 top의 위에 연결
+//	top = temp;				// top 위치를 삽입 노드로 이동
+//}
+//
+//// 스택의 top에서 원소를 삭제하는 연산
+//element pop() {
+//	element item;
+//	stackNode* temp = top;
+//
+//	if (top == NULL) {		// 스택이 공백 리스트인 경우
+//		printf("\n\n Stack is empty !\n");
+//		return 0;
+//	}
+//	else {					// 스택이 공백 리스트가 아닌 경우
+//		item = temp->data;
+//		top = temp->link;	// top 위치를 삭제 노드 아래로 이동
+//		free(temp);			// 삭제된 노드의 메모리 반환
+//		return item;		// 삭제된 원소 반환
+//	}
+//}
+//
+//// 스택의 원소를 top에서 bottom 순서로 출력하는 연산
+//void printStack() {
+//	stackNode* p = top;
+//	printf("\n STACK [ ");
+//	while (p) {
+//		printf("%c ", p->data);
+//		p = p->link;
+//	}
+//	printf("] ");
+//}
+//
+//// 수식의 괄호를 검사하는 연산
+//int testPair(char* exp) {
+//	char symbol, open_pair;
+//	// char형 포인터 매개변수로 받은 수식 exp의 길이를 계산하여 length 변수에 저장
+//	int i, length = strlen(exp); //문자열 길이 구하고
+//	top = NULL;
+//
+//	for (i = 0; i < length; i++) {
+//
+//		printStack();
+//
+//		symbol = exp[i]; //문자열 하나씩 검증
+//		switch (symbol) { //괄호 숫자 연산자 분류하는 함수
+//			// (1) 왼쪽 괄호는 스택에 삽입
+//		case '(':
+//		case '[':
+//		case '{':
+//			push(symbol); break;
+//			// (2) 오른쪽 괄호를 읽으면,
+//		case ')':
+//		case ']':
+//		case '}':
+//			if (top == NULL) return FALSE;
+//			else {
+//				// (2)-1 스택에서 마지막으로 읽은 괄호를 꺼냄
+//				open_pair = pop();
+//				// (2)-2 괄호 쌍이 맞는지 검사
+//				if ((open_pair == '(' && symbol != ')') ||
+//					(open_pair == '[' && symbol != ']') ||
+//					(open_pair == '{' && symbol != '}'))
+//					// (2)-3 괄호 쌍이 틀리면 수식 오류
+//					return FALSE;
+//				// (2)-4 괄호 쌍이 맞으면 다음 symbol 검사를 계속함
+//				else break;
+//			}
+//		}
+//	}
+//	if (top == NULL) return TRUE;// 수식 검사를 마친 후 스택이 공백이면 1을 반환
+//	else return FALSE;            // 공백이 아니면 0을 반환(수식 괄호 틀림)
+//}
+//
+///*
+// * stack의 top 노드에서부터 0번째 index로 메모리를 해제함
+// */
+//void freeStack()
+//{
+//	stackNode* pre = NULL;
+//	stackNode* cur = NULL;
+//
+//	pre = cur = top;
+//	while (cur != NULL)
+//	{
+//		pre = cur;
+//		cur = cur->link;
+//		free(pre);
+//		pre = NULL;
+//	}
+//}
+//
+//void exer3_bracket()
+//{
+//	char* express = "{(A+B)-3}*5+[{cos(x+y)+7}-1]*4";
+//	printf("%s", express);
+//
+//	if (testPair(express) == 1)
+//		printf("\n\n수식의 괄호가 맞게 사용되었습니다!");
+//	else
+//		printf("\n\n수식의 괄호가 틀렸습니다!");
+//
+//	getchar();
+//}
+//
+//void main(void) {
+//
+//	exer3_bracket();
+//	freeStack();
+//}
+//// EOF
+//
+//
 //실습 4
 
-typedef struct  stackNode {	// 스택의 노드를 구조체로 정의
-	element data;
-	struct stackNode* link;
-} stackNode;
-
-stackNode* top;				// 스택의 top 노드를 지정하기 위해 포인터 top 선언
-
-/*
- * 연산자의 우선순위를 반환함
- */
-int precedence(char op)
-{
-	switch (op) {
-	case '(': case ')': return 0;
-	case '+': case '-': return 1;
-	case '*': case '/': case '%': return 2;
-	}
-	return -1;
-}
-
-void init()
-{
-	top = NULL;
-}
-
-// 스택의 원소를 top에서 bottom 순서로 출력하는 연산
-void printStack() {
-	stackNode* p = top;
-	printf("\n STACK [ ");
-	while (p) {
-		printf("%c ", p->data);
-		p = p->link;
-	}
-	printf("] ");
-}
-
-void freeStack()
-{
-	stackNode* pre = NULL;
-	stackNode* cur = NULL;
-
-	pre = cur = top;
-	while (cur != NULL)
-	{
-		pre = cur;
-		cur = cur->link;
-		free(pre);
-		pre = NULL;
-	}
-}
-
-// 스택이 공백 상태인지 확인하는 연산
-int isEmpty() {
-	if (top == NULL) return 1;
-	else return 0;
-}
-
-// 스택의 top에 원소를 삽입하는 연산
-void push(element item) {
-	stackNode* temp = (stackNode*)calloc(1, sizeof(stackNode));
-	temp->data = item;
-	temp->link = top;		// 삽입 노드를 top의 위에 연결
-	top = temp;				// top 위치를 삽입 노드로 이동
-}
-
-// 스택의 top에서 원소를 삭제하는 연산
-element pop() {
-	element item;
-	stackNode* temp = top;
-
-	if (top == NULL) {		// 스택이 공백 리스트인 경우
-		printf("\n\n Stack is empty !\n");
-		return 0;
-	}
-	else {					// 스택이 공백 리스트가 아닌 경우
-		item = temp->data;
-		top = temp->link;	// top 위치를 삭제 노드 아래로 이동
-		free(temp);			// 삭제된 노드의 메모리 반환
-		return item;		// 삭제된 원소 반환
-	}
-}
-
-// 스택의 top 원소를 검색하는 연산
-element peek() {
-	if (top == NULL) {		// 스택이 공백 리스트인 경우
-		printf("\n\n Stack is empty !\n");
-		return 0;
-	}
-	else {					// 스택이 공백 리스트가 아닌 경우
-		return(top->data);  // 현재 top의 원소 반환
-	}
-}
-
-// 수식의 괄호를 검사하는 연산
-int testPair(char* exp) {
-	char symbol, open_pair;
-	// char형 포인터 매개변수로 받은 수식 exp의 길이를 계산하여 length 변수에 저장
-	int i, length = strlen(exp);
-	top = NULL;
-
-	for (i = 0; i < length; i++) {
-
-		//printStack();
-
-		symbol = exp[i];
-		switch (symbol) {
-			// (1) 왼쪽 괄호는 스택에 삽입
-		case '(':
-		case '[':
-		case '{':
-			push(symbol); break;
-			// (2) 오른쪽 괄호를 읽으면,
-		case ')':
-		case ']':
-		case '}':
-			if (top == NULL) return 0;
-			else {
-				// (2)-1 스택에서 마지막으로 읽은 괄호를 꺼냄
-				open_pair = pop();
-				// (2)-2 괄호 쌍이 맞는지 검사
-				if ((open_pair == '(' && symbol != ')') ||
-					(open_pair == '[' && symbol != ']') ||
-					(open_pair == '{' && symbol != '}'))
-					// (2)-3 괄호 쌍이 틀리면 수식 오류
-					return 0;
-				// (2)-4 괄호 쌍이 맞으면 다음 symbol 검사를 계속함
-				else break;
-			}
-		}
-	}
-	if (top == NULL) return 1;// 수식 검사를 마친 후 스택이 공백이면 1을 반환
-	else return 0;            // 공백이 아니면 0을 반환(수식 괄호 틀림)
-}
-
-void infix_to_postfix(char* infix, char* postfix)
-{
-	int cnt_i = 0;
-	int cnt_j = 0;
-	char c, op;
-
-
-	// 코드 작성 필요..
-}
-
-// 후위 표기법 수식을 계산하는 연산
-element evalPostfix(char* exp) {
-	int opr1, opr2, value, i = 0;
-	// char형 포인터 매개변수로 받은 수식 exp의 길이를 계산하여 length 변수에 저장
-	int length = strlen(exp);
-	char symbol;
-	top = NULL;
-
-	// 코드 작성 필요..
-}
-
-void exer4_postfix_eval()
-{
-	int result;
-	int cnt_i;
-	char infix_expr[13][80] = { "3*5-6/2",
-		"((4+2)/4)-(3+70/(7*5))",
-		"((((5*6)+7)-8)*9)",
-		"((((5*6)+7)-8)*9)+(9+8)*7",
-		"((((5*6)+7)-8)*9)+(((9+8)*7)%4)",
-		"(((((((((1*2)*3)*4)*5)*6)*7)*8)*9)*10)",
-		"1*2+3*4+6/2+8%3+9-8",
-		"70+80*9-10+(60+70+80*2-10)",
-		"(9-(4/2+1))*(5*2-2)",
-		"((80*87)/4)*2-705",
-		"100*((90-80+20*5)-(30*20-10/5))",
-		"(9-(4/2+1+(10*5)+7*6))*(50*20-10%2)",
-		"123+456*(789+(90-80+20*5)-(30*20-10/5))",
-	};
-	char postfix_expr[320] = { 0x00, };
-
-	for (cnt_i = 0; cnt_i < 13; cnt_i++)
-	{
-		printf("[%02d]-th 수식 평가\n", cnt_i);
-		if (testPair(infix_expr[cnt_i]) == 1) {
-			printf("괄호 개수가 일치함\n");
-		}
-		else {
-			printf("괄호 개수가 불일치함\n");
-		}
-
-		memset(postfix_expr, 0, sizeof(postfix_expr));
-
-		init();
-		infix_to_postfix(infix_expr[cnt_i], postfix_expr);
-
-		printf("\n\ninfix: %s -> postfix: %s\n", infix_expr[cnt_i], postfix_expr);
-
-		printf("후위 표기식 : %s", postfix_expr);
-
-		result = evalPostfix(postfix_expr);
-		printf("\n\n연산 결과 => %d\n\n", result);
-		freeStack();
-		getchar();
-	}
-}
-
-void main(void) {
-
-	exer4_postfix_eval();
-
-	getchar();
-}
+//typedef struct  stackNode {	// 스택의 노드를 구조체로 정의
+//	element data;
+//	struct stackNode* link;
+//} stackNode;
+//
+//stackNode* top;	// 스택의 top 노드를 지정하기 위해 포인터 top 선언
+//
+///*
+// * 연산자의 우선순위를 반환함
+// */
+//int precedence(char op)
+//{
+//	switch (op) {
+//	case '(': case ')': return 0;
+//	case '+': case '-': return 1;
+//	case '*': case '/': case '%': return 2;
+//	}
+//	return -1;
+//}
+//
+//void init()
+//{
+//	top = NULL;
+//}
+//
+//// 스택의 원소를 top에서 bottom 순서로 출력하는 연산
+//void printStack() {
+//	stackNode* p = top;
+//	printf("\n STACK [ ");
+//	while (p) {
+//		printf("%c ", p->data);
+//		p = p->link;
+//	}
+//	printf("] ");
+//}
+//
+//void freeStack()
+//{
+//	stackNode* pre = NULL;
+//	stackNode* cur = NULL;
+//
+//	pre = cur = top; //탑을 가르키게함
+//	while (cur != NULL)
+//	{
+//		pre = cur;
+//		cur = cur->link;
+//		free(pre);
+//		pre = NULL;
+//	}
+//}
+//
+//// 스택이 공백 상태인지 확인하는 연산
+//int isEmpty() {
+//	if (top == NULL) return 1;
+//	else return 0;
+//}
+//
+//// 스택의 top에 원소를 삽입하는 연산
+//void push(element item) {
+//	stackNode* temp = (stackNode*)calloc(1, sizeof(stackNode));
+//	temp->data = item;
+//	temp->link = top;		// 삽입 노드를 top의 위에 연결
+//	top = temp;				// top 위치를 삽입 노드로 이동
+//}
+//
+//// 스택의 top에서 원소를 삭제하는 연산
+//element pop() {
+//	element item;
+//	stackNode* temp = top;
+//
+//	if (top == NULL) {		// 스택이 공백 리스트인 경우
+//		printf("\n\n Stack is empty !\n");
+//		return 0;
+//	}
+//	else {					// 스택이 공백 리스트가 아닌 경우
+//		item = temp->data;
+//		top = temp->link;	// top 위치를 삭제 노드 아래로 이동
+//		free(temp);			// 삭제된 노드의 메모리 반환
+//		return item;		// 삭제된 원소 반환
+//	}
+//}
+//
+//// 스택의 top 원소를 검색하는 연산
+//element peek() {
+//	if (top == NULL) {		// 스택이 공백 리스트인 경우
+//		printf("\n\n Stack is empty !\n");
+//		return 0;
+//	}
+//	else {					// 스택이 공백 리스트가 아닌 경우
+//		return(top->data);  // 현재 top의 원소 반환
+//	}
+//}
+//
+//// 수식의 괄호를 검사하는 연산
+//int testPair(char* exp) {
+//	char symbol, open_pair;
+//	// char형 포인터 매개변수로 받은 수식 exp의 길이를 계산하여 length 변수에 저장
+//	int i, length = strlen(exp);
+//	top = NULL;
+//
+//	for (i = 0; i < length; i++) {
+//
+//		//printStack();
+//
+//		symbol = exp[i];
+//		switch (symbol) { //if 문이랑 같음
+//			// (1) 왼쪽 괄호는 스택에 삽입
+//		case '(':
+//		case '[':
+//		case '{':
+//			push(symbol); break; //숫자면 걍 탈출
+//			// (2) 오른쪽 괄호를 읽으면,
+//		case ')':
+//		case ']':
+//		case '}':
+//			if (top == NULL) return 0;
+//			else {
+//				// (2)-1 스택에서 마지막으로 읽은 괄호를 꺼냄
+//				open_pair = pop();
+//				// (2)-2 괄호 쌍이 맞는지 검사
+//				if ((open_pair == '(' && symbol != ')') ||
+//					(open_pair == '[' && symbol != ']') ||
+//					(open_pair == '{' && symbol != '}'))
+//					// (2)-3 괄호 쌍이 틀리면 수식 오류
+//					return 0;
+//				// (2)-4 괄호 쌍이 맞으면 다음 symbol 검사를 계속함
+//				else break;
+//			}
+//		}
+//	}
+//	if (top == NULL) return 1;// 수식 검사를 마친 후 스택이 공백이면 1을 반환
+//	else return 0;            // 공백이 아니면 0을 반환(수식 괄호 틀림)
+//}
+//
+////중위표기를 후위표기로 변경 infix 받은 값, postfix 저장 위치
+//void infix_to_postfix(char* infix, char* postfix)
+//{
+//	int i = 0;
+//	int j = 0;
+//	char c, op;
+//
+//	while (infix[i] != '\0')
+//	{
+//		c = infix[i++];
+//
+//		if (c >= '0' && c <= '9')
+//		{
+//			postfix[j++] = c;
+//
+//			while (infix[i] >= '0' && infix[i] <= '9')
+//			{
+//				postfix[j++] = infix[i++]; //컴퓨터 구조체에 저장
+//			}
+//			postfix[j++] = ' '; //숫자 연산자등 구분을 위한 공백
+//		}
+//		else if (c == '(')
+//		{
+//			push(c);
+//		}
+//		else if (c == ')')
+//		{ //연산자 다 사용or ( 나올때 까지 반복
+//			while (!isEmpty())
+//			{
+//				op = pop();
+//				if (op == '(') {
+//					break;
+//				}
+//				else {
+//					postfix[j++] = op;
+//					postfix[j++] = ' ';
+//				}
+//			}
+//		}
+//
+//		else if (c == '+' || c == '-' || c == '*' || c == '/' || c == '%')
+//		{
+//			while (!isEmpty())
+//			{
+//				op = peek(); //top의 원소 반환
+//				//연산자 우선 순위 비교
+//				if (precedence(c) <= precedence(op))
+//				{
+//					op = pop();
+//					postfix[j++] = op;
+//					postfix[j++] = ' ';
+//				}
+//				else { break; }
+//			}
+//			if (c == '-')
+//			{
+//				op = 0;
+//			}
+//			push(c);
+//		}
+//	}
+//	//남은 것들 싹다 pop
+//	while (!isEmpty()) {
+//		postfix[j++] = pop();
+//		postfix[j++] = ' ';
+//	}
+//	postfix[j++] = '\0';
+//}
+//
+//// 후위 표기법 수식을 계산하는 연산
+//element evalPostfix(char* exp) {
+//	int opr1, opr2, value, i = 0;
+//	// char형 포인터 매개변수로 받은 수식 exp의 길이를 계산하여 length 변수에 저장
+//	int length = strlen(exp);
+//	char symbol;
+//	top = NULL;
+//
+//	for (i = 0; i < length; i++)
+//	{ //숫자열로 변환
+//		symbol = exp[i];
+//		if (symbol >= '0' && symbol <= '9')
+//		{
+//			value = symbol - '0';
+//			i += 1;
+//			while (exp[i] >= '0' && exp[i] <= '9') {
+//				value *= 10;
+//				value += (exp[i] - '0');
+//				i += 1;
+//			}
+//			push(value);
+//		}
+//		else if (symbol == '+' || symbol == '-' || symbol == '*' || symbol == '/' || symbol == '%') {
+//			opr2 = pop();
+//			opr1 = pop();
+//
+//			switch(symbol)
+//			{
+//			case '+': push(opr1 + opr2); break;
+//			case '-': push(opr1 - opr2); break;
+//			case '*': push(opr1 * opr2); break;
+//			case '/': push(opr1 / opr2); break;
+//			case '%': push(opr1 % opr2); break;
+//			}
+//		}
+//	}
+//	return pop();
+//}
+//
+//void exer4_postfix_eval()
+//{
+//	int result;
+//	int cnt_i;
+//	char infix_expr[13][80] = { "3*5-6/2",
+//		"((4+2)/4)-(3+70/(7*5))",
+//		"((((5*6)+7)-8)*9)",
+//		"((((5*6)+7)-8)*9)+(9+8)*7",
+//		"((((5*6)+7)-8)*9)+(((9+8)*7)%4)",
+//		"(((((((((1*2)*3)*4)*5)*6)*7)*8)*9)*10)",
+//		"1*2+3*4+6/2+8%3+9-8",
+//		"70+80*9-10+(60+70+80*2-10)",
+//		"(9-(4/2+1))*(5*2-2)",
+//		"((80*87)/4)*2-705",
+//		"100*((90-80+20*5)-(30*20-10/5))",
+//		"(9-(4/2+1+(10*5)+7*6))*(50*20-10%2)",
+//		"123+456*(789+(90-80+20*5)-(30*20-10/5))",
+//	};
+//	char postfix_expr[320] = { 0x00, };
+//
+//	for (cnt_i = 0; cnt_i < 13; cnt_i++)
+//	{
+//		printf("[%02d]-th 수식 평가\n", cnt_i);
+//		if (testPair(infix_expr[cnt_i]) == 1) {
+//			printf("괄호 개수가 일치함\n");
+//		}
+//		else {
+//			printf("괄호 개수가 불일치함\n");
+//		}
+//
+//		memset(postfix_expr, 0, sizeof(postfix_expr));
+//
+//		init();
+//		infix_to_postfix(infix_expr[cnt_i], postfix_expr);
+//
+//		printf("\n\ninfix: %s -> postfix: %s\n", infix_expr[cnt_i], postfix_expr);
+//
+//		printf("후위 표기식 : %s", postfix_expr);
+//
+//		result = evalPostfix(postfix_expr);
+//		printf("\n\n연산 결과 => %d\n\n", result);
+//		freeStack();
+//		getchar();
+//	}
+//}
+//
+//void main(void) {
+//
+//	exer4_postfix_eval();
+//
+//	getchar();
+//}
 
 // EOF
 
+//미로 찾기
 
+/*
+*	maze.c
+*/
 
-int main() {
+#define MAX_STACK_SIZE 100
+#define MAZE_SIZE 6
 
-	exercise1_1();
+typedef struct StackObjectRec {
+	short r;
+	short c;
+} StackObject;
 
-	//exercise1_2();
+StackObject stack[MAX_STACK_SIZE];
+int top = -1;
+StackObject here = { 1,0 }, entry = { 1,0 };
 
-	//exercise2();
+//벽은 1 이동 가능 0 출구 x
+char maze[MAZE_SIZE][MAZE_SIZE] = {
+	{ '1', '1', '1', '1', '1', '1' },
+	{ 'e', '0', '1', '0', '0', '1' },
+	{ '1', '0', '0', '0', '1', '1' },
+	{ '1', '0', '1', '0', '1', '1' },
+	{ '1', '0', '1', '0', '0', 'x' },
+	{ '1', '1', '1', '1', '1', '1' },
+};
 
+void initialize()
+{
+	top = -1;
+}
+
+int isEmpty()
+{
+	return (top == -1);
+}
+
+int isFull()
+{
+	return (top == (MAX_STACK_SIZE - 1));
+}
+
+void push(StackObject item)
+{
+	if (isFull()) {
+		printf("stack is full\n");
+	}
+	else stack[++top] = item;
+}
+
+StackObject pop()
+{
+	if (isEmpty()) {
+		printf("stack is empty\n");
+	}
+	else return stack[top--];
+}
+
+void printStack()
+{
+	int i;
+	for (i = 5; i > top; i--)
+		printf("|     |\n");
+	for (i = top; i >= 0; i--)
+		printf("|(%01d,%01d)|\n", stack[i].r, stack[i].c);
+	printf("-------\n");
+}
+
+void pushLoc(int r, int c)
+{
+	if (r < 0 || c < 0) return;
+	if (maze[r][c] != '1' && maze[r][c] != '.') {
+		StackObject tmp;
+		tmp.r = r;
+		tmp.c = c;
+		push(tmp);
+	}
+}
+
+void printMaze(char m[MAZE_SIZE][MAZE_SIZE])
+{
+	int r, c;
+	printf("\n\n");
+	for (r = 0; r < MAZE_SIZE; r++) {
+		for (c = 0; c < MAZE_SIZE; c++) {
+			if (c == here.c && r == here.r)
+				printf("m ");
+			else {
+				if (m[r][c] == 0) printf("0 ");
+				else printf("%c ", m[r][c]);
+			}
+		}
+		printf("\n");
+	}
+	printf("\n\n");
+}
+void findRoot()
+{
+	int r, c;
+	here = entry;
+	printMaze(maze);
+	printStack();
+	//r, c가 x에 도달할 때까지 반복
+	while (maze[here.r][here.c] != 'x') {
+		printMaze(maze);
+		r = here.r;
+		c = here.c;
+		maze[r][c] = '.'; //방문 한 곳 .으로 표시
+		pushLoc(r - 1, c);
+		pushLoc(r + 1, c);
+		pushLoc(r, c - 1);
+		pushLoc(r, c + 1);
+		printStack();
+		if (isEmpty()) {
+			printf("FAILURE\n");
+			return;
+		}
+		else
+		{
+			here = pop();
+		}
+		printMaze(maze);
+		printStack();
+		getchar();
+	}
+	printf("SUCCESS\n");
+}
+
+int main()
+{
+	findRoot();
+	getchar();
 	return 0;
 }
+
+
+
+//int main() {
+//
+//	//exercise1_1();
+//
+//	//exercise1_2();
+//
+//	//exercise2();
+//
+//
+//	exercise4();
+//
+//	return 0;
+//}
