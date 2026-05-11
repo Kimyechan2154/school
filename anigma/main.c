@@ -1,105 +1,102 @@
 #define _CRT_SECURE_NO_WARNINGS
 #include <stdio.h>
+#include <string.h>
 #include <memory.h>
 
-// 각 로터의 배선 데이터 (0~25 범위의 정수 매핑)
-// Index: 0(A) 1(B) 2(C) ... 25(Z)
+// 로터 배선 및 노치 위치 정의
 int WIRING_1[] = { 4,10,12,5,11,6,3,16,21,25,13,19,14,22,24,7,20,18,0,9,1,2,23,8,15,17 }; // Rotor I
 int WIRING_2[] = { 0,9,3,10,18,8,17,20,23,1,11,7,22,19,12,2,16,6,25,13,15,24,5,21,14,4 }; // Rotor II
-int WIRING_3[] = { 1,3,5,7,9,11,13,2,15,3,19,18,20,23,21,14,12,10,8,6,4,0,17,22,24,25 };  // Rotor III
+int WIRING_3[] = { 1,3,5,7,9,11,13,2,15,16,19,18,20,23,21,14,12,10,8,6,4,0,17,22,24,25 }; // Rotor III
 int REFLECT_B[] = { 24,17,20,7,16,18,11,3,15,23,13,6,14,10,12,8,4,1,5,25,2,22,21,9,0,19 };// Reflector B
 
-// 로터 함수 (direction: 0은 순방향, 1은 역방향)
-int rotor(int input, int wiring[], int direction) {
-    if (direction == 0) {
-        // 순방향: 인덱스 자체가 입력값이 됨 (a=0 -> wiring[0])
-        return wiring[input];
+// 각 로터의 노치(턴오버) 위치: I(Q=16), II(E=4), III(V=21)
+int NOTCH_1 = 16, NOTCH_2 = 4, NOTCH_3 = 21;
+
+// 로터 함수 (회전 위치인 offset 반영)
+int rotor(int input, int wiring[], int offset, int direction) {
+    if (direction == 0) { // 순방향
+        int shift_in = (input + offset) % 26;
+        int substitution = wiring[shift_in];
+        return (substitution - offset + 26) % 26;
     }
-    else {
-        // 역방향: 치환값(wiring[i])이 입력값과 일치하는 인덱스(i)를 찾아 반환
+    else { // 역방향
+        int shift_in = (input + offset) % 26;
         for (int i = 0; i < 26; i++) {
-            if (wiring[i] == input) return i;
+            if (wiring[i] == shift_in) {
+                return (i - offset + 26) % 26;
+            }
         }
     }
-    return -1; // 에러 케이스
+    return -1;
 }
 
-int reflector(int input) {
-    // 반사기도 동일하게 0~25 인덱스 직접 참조
-    return REFLECT_B[input];
-}
-
-int plugboard(int* plug, int input)
-{
-    if (plug[input] == -1) //플러그 연결 안됐으면 그대로 출력 내보내기
-    {
-        return input;
-    }
-    return plug[input]; //연결 됐으면 해당 정수 반환
+int plugboard(int* plug, int input) {
+    if (plug[input] == -1) return input;
+    return plug[input];
 }
 
 int main() {
-    int N = 0;
-    int Plug[26] = { 0, };
-    memset(Plug, -1, sizeof(Plug)); //나중에 plugboard 입력이 들어왔을때 -1이면 그대로 다시 출력(-1로 전체 초기화)
-    printf("[plugboard] 몇개?: ");
+    int N = 0, Plug[26];
+    int off1 = 0, off2 = 0, off3 = 0; // 로터 초기 위치 (A, A, A)
+    char sentence[256];
+
+    memset(Plug, -1, sizeof(Plug));
+
+    // 1. 플러그보드 설정
+    printf("[plugboard] 연결 쌍 개수: ");
     scanf("%d", &N);
-
-    for (int i = 0; i < N; i++)
-    {
-        char buffer[2] = { 0, };
-        printf("[plugboard](%d) ? <-> ?", i + 1);
-        scanf(" %c %c", &buffer[0], &buffer[1]);
-        Plug[(int)(buffer[0] - 97)] = (int)(buffer[1] - 97); //버퍼에 들어온 알파벳 입력을 아스키에서 정수형으로 변환해서 기입.
-        Plug[(int)(buffer[1] - 97)] = (int)(buffer[0] - 97); //양방향 변환을 위한 반대 경로 추가.
-    }
-    char letter = 0;
-    printf("알파벳 소문자 한 개를 입력하세요 (a-z): ");
-
-    // 이전에 남아있을 수 있는 엔터 키(\n)를 무시하기 위해 공백 추가
-    if (scanf(" %c", &letter) != 1) return 0;
-
-    // a=0, b=1 ... z=25 처리
-    int input = (int)letter - 97;
-
-    if (input < 0 || input > 25) {
-        printf("잘못된 입력입니다.\n");
-        return 0;
+    for (int i = 0; i < N; i++) {
+        char a, b;
+        printf("  (%d) 쌍 입력 (예: a b): ", i + 1);
+        scanf(" %c %c", &a, &b);
+        Plug[a - 97] = b - 97;
+        Plug[b - 97] = a - 97;
     }
 
+    // 2. 문장 입력
+    printf("\n암호화할 문장 입력 (소문자/공백): ");
+    while (getchar() != '\n'); // 입력 버퍼 비우기
+    fgets(sentence, sizeof(sentence), stdin);
+    sentence[strcspn(sentence, "\n")] = 0; // 줄바꿈 제거
 
-    // --- 암호화 경로 (Signal Path) ---
+    printf("결과: ");
 
-    //0. 입력 후 플러그보드 통과
-    input = plugboard(Plug, input);
-    printf("%c -> ", (char)(input + 97));
+    // 3. 문장 처리 루프
+    for (int i = 0; i < strlen(sentence); i++) {
+        if (sentence[i] < 'a' || sentence[i] > 'z') {
+            printf("%c", sentence[i]); // 알파벳이 아니면 그대로 출력
+            continue;
+        }
 
-    // 1. Forward Pass (우측 로터 -> 좌측 로터 순서)
-    int pass1 = rotor(input, WIRING_3, 0); // Rotor III
-    printf("%c -> ", (char)(pass1 + 97));
-    int pass2 = rotor(pass1, WIRING_2, 0); // Rotor II
-    printf("%c -> ", (char)(pass2 + 97));
-    int pass3 = rotor(pass2, WIRING_1, 0); // Rotor I
-    printf("%c -> ", (char)(pass3 + 97));
+        // --- 로터 회전 로직 (암호화 전 단계) ---
+        // 더블 스테핑 로직 포함
+        if (off2 == NOTCH_2) { // 중간 로터가 노치에 도달 시
+            off1 = (off1 + 1) % 26;
+            off2 = (off2 + 1) % 26;
+        }
+        else if (off3 == NOTCH_3) { // 오른쪽 로터가 노치에 도달 시
+            off2 = (off2 + 1) % 26;
+        }
+        off3 = (off3 + 1) % 26; // 오른쪽 로터는 매 입력마다 회전
 
-    // 2. Reflection (유턴)
-    int reflected = reflector(pass3);
-    printf("%c -> ", (char)(reflected + 97));
+        // --- 암호화 경로 (Signal Path) ---
+        int signal = sentence[i] - 97;
 
-    // 3. Backward Pass (좌측 로터 -> 우측 로터 순서)
-    int pass4 = rotor(reflected, WIRING_1, 1); // Rotor I Inverse
-    printf("%c -> ", (char)(pass4 + 97));
-    int pass5 = rotor(pass4, WIRING_2, 1);     // Rotor II Inverse
-    printf("%c -> ", (char)(pass5 + 97));
-    int pass6 = rotor(pass5, WIRING_3, 1);     // Rotor III Inverse
-    printf("%c -> ", (char)(pass6 + 97));
+        signal = plugboard(Plug, signal);             // 플러그보드 (In)
+        signal = rotor(signal, WIRING_3, off3, 0);    // Rotor III (Fwd)
+        signal = rotor(signal, WIRING_2, off2, 0);    // Rotor II (Fwd)
+        signal = rotor(signal, WIRING_1, off1, 0);    // Rotor I (Fwd)
 
-    //4. 암호화 후 다시 플러그보드 통과
-    pass6 = plugboard(Plug, pass6);
-    printf("%c\n", (char)(pass6 + 97));
+        signal = REFLECT_B[signal];                   // Reflector
 
-    // 출력 처리: 숫자를 다시 문자로 변환 (+97)
-    printf("입력: %c (정수: %d) -> 출력: %c (정수: %d)\n", letter, input, (char)(pass6 + 97), pass6);
+        signal = rotor(signal, WIRING_1, off1, 1);    // Rotor I (Bwd)
+        signal = rotor(signal, WIRING_2, off2, 1);    // Rotor II (Bwd)
+        signal = rotor(signal, WIRING_3, off3, 1);    // Rotor III (Bwd)
+        signal = plugboard(Plug, signal);             // 플러그보드 (Out)
+
+        printf("%c", (char)(signal + 97));
+    }
+    printf("\n");
 
     return 0;
 }
