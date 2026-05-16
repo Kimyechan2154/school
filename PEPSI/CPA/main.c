@@ -1,229 +1,105 @@
-#define _CRT_SECURE_NO_WARNINGS
-
 #include <stdio.h>
 #include <stdlib.h>
-#include <stdint.h>
-#include <time.h> //시간 측정을 위한 헤더 추가
 
-#include "params.h"
-#include "file_read.h"
+#define TRUE   1
+#define TRUE   1
 
-// ---- [최적화] SPA 분석을 통해 찾아낸 SubBytes(S-box) 연산 구간 ----
-#define START_POINT 0   // 분석 시작 포인트
-#define END_POINT   3724  // 분석 종료 포인트
-// -----------------------------------------------------------------
+typedef int NodeData;
 
-const uint8_t sbox[256] = {
-    0x63, 0x7c, 0x77, 0x7b, 0xf2, 0x6b, 0x6f, 0xc5, 0x30, 0x01, 0x67, 0x2b, 0xfe, 0xd7, 0xab, 0x76,
-    0xca, 0x82, 0xc9, 0x7d, 0xfa, 0x59, 0x47, 0xf0, 0xad, 0xd4, 0xa2, 0xaf, 0x9c, 0xa4, 0x72, 0xc0,
-    0xb7, 0xfd, 0x93, 0x26, 0x36, 0x3f, 0xf7, 0xcc, 0x34, 0xa5, 0xe5, 0xf1, 0x71, 0xd8, 0x31, 0x15,
-    0x04, 0xc7, 0x23, 0xc3, 0x18, 0x96, 0x05, 0x9a, 0x07, 0x12, 0x80, 0xe2, 0xeb, 0x27, 0xb2, 0x75,
-    0x09, 0x83, 0x2c, 0x1a, 0x1b, 0x6e, 0x5a, 0xa0, 0x52, 0x3b, 0xd6, 0xb3, 0x29, 0xe3, 0x2f, 0x84,
-    0x53, 0xd1, 0x00, 0xed, 0x20, 0xfc, 0xb1, 0x5b, 0x6a, 0xcb, 0xbe, 0x39, 0x4a, 0x4c, 0x58, 0xcf,
-    0xd0, 0xef, 0xaa, 0xfb, 0x43, 0x4d, 0x33, 0x85, 0x45, 0xf9, 0x02, 0x7f, 0x50, 0x3c, 0x9f, 0xa8,
-    0x51, 0xa3, 0x40, 0x8f, 0x92, 0x9d, 0x38, 0xf5, 0xbc, 0xb6, 0xda, 0x21, 0x10, 0xff, 0xf3, 0xd2,
-    0xcd, 0x0c, 0x13, 0xec, 0x5f, 0x97, 0x44, 0x17, 0xc4, 0xa7, 0x7e, 0x3d, 0x64, 0x5d, 0x19, 0x73,
-    0x60, 0x81, 0x4f, 0xdc, 0x22, 0x2a, 0x90, 0x88, 0x46, 0xee, 0xb8, 0x14, 0xde, 0x5e, 0x0b, 0xdb,
-    0xe0, 0x32, 0x3a, 0x0a, 0x49, 0x06, 0x24, 0x5c, 0xc2, 0xd3, 0xac, 0x62, 0x91, 0x95, 0xe4, 0x79,
-    0xe7, 0xc8, 0x37, 0x6d, 0x8d, 0xd5, 0x4e, 0xa9, 0x6c, 0x56, 0xf4, 0xea, 0x65, 0x7a, 0xae, 0x08,
-    0xba, 0x78, 0x25, 0x2e, 0x1c, 0xa6, 0xb4, 0xc6, 0xe8, 0xdd, 0x74, 0x1f, 0x4b, 0xbd, 0x8b, 0x8a,
-    0x70, 0x3e, 0xb5, 0x66, 0x48, 0x03, 0xf6, 0x0e, 0x61, 0x35, 0x57, 0xb9, 0x86, 0xc1, 0x1d, 0x9e,
-    0xe1, 0xf8, 0x98, 0x11, 0x69, 0xd9, 0x8e, 0x94, 0x9b, 0x1e, 0x87, 0xe9, 0xce, 0x55, 0x28, 0xdf,
-    0x8c, 0xa1, 0x89, 0x0d, 0xbf, 0xe6, 0x42, 0x68, 0x41, 0x99, 0x2d, 0x0f, 0xb0, 0x54, 0xbb, 0x16
-};
+typedef struct _TREENODE_ {
+	NodeData data;
+	struct _TREENODE_* left;
+	struct _TREENODE_* right;
+}TREENODE;
 
-void fileReadTest()
+TREENODE* makeRN(NodeData data, TREENODE* leftNode, TREENODE* rightNode)
 {
-    uint8_t** pt = NULL;
-    float** trace = NULL;
-    FILE* ptFile = fopen(PT_PATH, "rt");
-    FILE* traceFile = fopen(TRACE_PATH, "rb");
+	TREENODE* root = NULL;
 
-    fseek(traceFile, 32, SEEK_CUR);
+	root = (TREENODE*)calloc(1, sizeof(TREENODE));
+	assert(root != NULL);
 
-    if (traceFile == NULL || ptFile == NULL)
-    {
-        printf("file open error\n");
-        return;
-    }
+	root->data = data;
+	root->left = leftNode;
+	root->right = rightNode;
 
-    pt = (uint8_t**)calloc(NUM_TRACE, sizeof(uint8_t*));
-    trace = (float**)calloc(NUM_TRACE, sizeof(float*));
-    for (int traceIdx = 0; traceIdx < NUM_TRACE; traceIdx++)
-    {
-        pt[traceIdx] = (uint8_t*)calloc(16, sizeof(uint8_t));
-        trace[traceIdx] = (float*)calloc(NUM_POINT, sizeof(float));
-    }
+	return root;
+}
+void makeLST(TREENODE* root, TREENODE* leftSub)
+{
+	root->left = leftSub;
+}
 
-    if (ptFileRead(pt, ptFile) != 0)
-    {
-        printf("ptFileRead error\n");
-        return;
-    }
+void makeRST(TREENODE* root, TREENODE* rightSub)
+{
+	root->right = rightSub;
+}
 
-    if (traceFileRead(trace, traceFile) != 0)
-    {
-        printf("traceFileRead error\n");
-        return;
-    }
+NodeData getD(TREENODE* node)
+{
+	return (node->data);
+}
 
-    fclose(traceFile);
-    fclose(ptFile);
+void setD(TREENODE* node, NodeData data)
+{
+	node->data = data;
+}
 
-    // 테스트 출력
-    printf("[ptFileRead Test]\n");
-    for (int byteIdx = 0; byteIdx < 16; byteIdx++)
-    {
-        printf("%02x ", pt[0][byteIdx]);
-    }
-    printf("\n");
+TREENODE* getLST(TREENODE* node)
+{
+	return (node->left);
+}
 
-    printf("[traceFileRead Test]\n");
-    for (int pointIdx = 0; pointIdx < 16; pointIdx++)
-    {
-        printf("%f ", trace[0][pointIdx]);
-    }
-    printf("\n");
-
-    // 파이썬 시각화를 위해 trace[0]을 txt 파일로 저장
-    FILE* f_out = fopen("trace0.txt", "w");
-    if (f_out != NULL)
-    {
-        for (int p = 0; p < NUM_POINT; p++)
-        {
-            fprintf(f_out, "%f\n", trace[0][p]);
-        }
-        fclose(f_out);
-        printf("\n[SPA 준비] trace0.txt 파일 저장 완료!\n");
-    }
-
-    // 수행 시간 측정 시작
-    double start, end;
-    start = (double)clock() / CLOCKS_PER_SEC;
-
-    // 전체 16바이트 정답 키를 저장할 배열
-    uint8_t finalKey[16] = { 0, };
-
-    printf("\n[전체 16바이트 DPA 분석 시작 (MSB 모델 & SPA 결합 최적화)]\n");
-    printf("- 타겟 분석 구간: %d ~ %d Points\n\n", START_POINT, END_POINT);
-
-    // 타겟 바이트 루프 (0번 ~ 15번 바이트)
-    for (int targetByte = 0; targetByte < 16; targetByte++)
-    {
-        float bestPeak = 0.0f;       // 현재 바이트의 가장 큰 피크(1등)
-        float secondBestPeak = 0.0f; // 현재 바이트의 두 번째로 큰 피크(2등)
-        uint8_t bestKey = 0;         // 1등 피크일 때의 추측 키
-
-        printf("Target Byte %2d 분석 중 ", targetByte);
-
-        // 키 추측 루프 (0x00 ~ 0xFF)
-        for (int keyGuess = 0; keyGuess < 256; keyGuess++)
-        {
-            float* sum0 = (float*)calloc(NUM_POINT, sizeof(float));
-            float* sum1 = (float*)calloc(NUM_POINT, sizeof(float));
-            int cnt0 = 0;
-            int cnt1 = 0;
-
-            // 파형 순회 루프
-            for (int traceIdx = 0; traceIdx < NUM_TRACE; traceIdx++)
-            {
-                uint8_t intermediate = sbox[pt[traceIdx][targetByte] ^ keyGuess];
-
-                // MSB(0x80)를 기준으로 0, 1 집합 분류
-            //    int bit = (intermediate & 0x80) ? 1 : 0;
-
-            //    if (bit == 0)
-            //    {
-            //        // [최적화 적용] SubBytes 구간(START_POINT ~ END_POINT)만 연산
-            //        for (int pointIdx = START_POINT; pointIdx < END_POINT; pointIdx++) sum0[pointIdx] += trace[traceIdx][pointIdx];
-            //        cnt0++;
-            //    }
-            //    else
-            //    {
-            //        // [최적화 적용] SubBytes 구간(START_POINT ~ END_POINT)만 연산
-            //        for (int pointIdx = START_POINT; pointIdx < END_POINT; pointIdx++) sum1[pointIdx] += trace[traceIdx][pointIdx];
-            //        cnt1++;
-            //    }
-            //}
-
-            // 포인트별 차분 분석 및 현재 키의 최대 피크 탐색
-            float currentKeyMax = 0.0f;
-            if (cnt0 > 0 && cnt1 > 0)
-            {
-                // [최적화 적용] 차이를 계산하고 피크를 찾는 과정도 SubBytes 구간만 탐색
-                for (int pointIdx = START_POINT; pointIdx < END_POINT; pointIdx++)
-                {
-                    float diff = (sum1[pointIdx] / cnt1) - (sum0[pointIdx] / cnt0);
-                    if (diff < 0) diff = -diff; // 절댓값 처리
-
-                    if (diff > currentKeyMax) currentKeyMax = diff;
-                }
-            }
-
-            // 1등 피크(bestPeak)와 2등 피크(secondBestPeak) 저장
-            if (currentKeyMax > bestPeak)
-            {
-                secondBestPeak = bestPeak;   // 기존 1등을 2등으로
-                bestPeak = currentKeyMax;    // 새로운 1등 기록
-                bestKey = (uint8_t)keyGuess;
-            }
-            else if (currentKeyMax > secondBestPeak)
-            {
-                secondBestPeak = currentKeyMax; // 2등만 갱신
-            }
-
-            free(sum0);
-            free(sum1);
-            if (keyGuess % 32 == 0) printf("."); // 진행률 표시
-        }
-
-        // 정답 키 배열에 저장
-        finalKey[targetByte] = bestKey;
-
-        // 개별 바이트 내부 Ratio 계산 및 출력
-        float ratio = 0.0f;
-        if (secondBestPeak > 0.0f)
-        {
-            ratio = bestPeak / secondBestPeak;
-        }
-
-        if (ratio >= 1.2f)
-        {
-            printf(" 완료! (Key: %02X, Ratio: %.2f) -> 올바른 키를 찾았습니다.\n", bestKey, ratio);
-        }
-        else
-        {
-            printf(" 완료! (Key: %02X, Ratio: %.2f) -> 다시 찾아보세요.\n", bestKey, ratio);
-        }
-    }
-
-    // 수행 시간 측정 종료
-    end = (((double)clock()) / CLOCKS_PER_SEC);
-
-    // [최종 결과 출력]
-    printf("\n========================================\n");
-    printf("최종 복구된 16바이트 AES 키 (HEX)  : ");
-    for (int i = 0; i < 16; i++) printf("%02X ", finalKey[i]);
-
-    printf("\n최종 복구된 16바이트 AES 키 (문자) : ");
-    for (int i = 0; i < 16; i++) printf("%c", finalKey[i]);
-
-    // 프로그램 수행 시간 출력
-    printf("\n\n프로그램 수행 시간 : %lf 초\n", (end - start));
-    printf("========================================\n");
-
-    // 동적할당 메모리 해제
-    for (int traceIdx = 0; traceIdx < NUM_TRACE; traceIdx++)
-    {
-        free(pt[traceIdx]);
-        free(trace[traceIdx]);
-    }
-    free(pt);
-    free(trace);
+TREENODE* getRST(TREENODE* node)
+{
+	return (node->right);
 }
 
 int main()
 {
-    fileReadTest();
-    return 0;
+	TREENODE* bt1 = NULL;
+	TREENODE* bt2 = NULL;
+	TREENODE* bt3 = NULL;
+	TREENODE* bt4 = NULL;
+	TREENODE* bt5 = NULL;
+	TREENODE* bt6 = NULL;
+	TREENODE* bt7 = NULL;
+	TREENODE* bt8 = NULL;
+	TREENODE* bt9 = NULL;
+
+	bt1 = makeRN(1, NULL, NULL);
+
+	printf("high: %d\n", getH(bt1));
+	getchar();
+
+	bt2 = makeRN(2, NULL, NULL);
+	bt3 = makeRN(3, NULL, NULL);
+	bt4 = makeRN(4, NULL, NULL);
+	bt5 = makeRN(5, NULL, NULL);
+	bt6 = makeRN(6, NULL, NULL);
+	bt7 = makeRN(7, NULL, NULL);
+	bt8 = makeRN(8, NULL, NULL);
+	bt9 = makeRN(9, NULL, NULL);
+
+	makeLST(bt1, bt2);
+	makeRST(bt1, bt3);
+	makeLST(bt2, bt4);
+	makeRST(bt2, bt5);
+	makeLST(bt3, bt6);
+	makeRST(bt3, bt7);
+	makeLST(bt4, bt8);
+	makeRST(bt4, bt9);
+
+
+	printf("high: %d\n", getH(bt1));
+	getchar();
+
+	printf("%d\n", getD(getLST(bt1)));
+	printf("%d\n", getD(getLST(getgetLST(bt1))));
+
+	showT(bt1);
+	getchar();
+
+	return 0;
+
 }
