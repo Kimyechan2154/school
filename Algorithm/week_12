@@ -1,0 +1,249 @@
+#include <stdio.h>
+#include <stdlib.h>
+#include <memory.h>
+#include <assert.h>
+
+#define TRUE    1
+#define FALSE   0
+
+typedef char element;
+typedef int NodeData;
+
+typedef struct _TREE_ {
+	element key;
+	struct TREE* left;
+	struct TREE* right;
+}TREE;
+
+typedef struct _NODE_ {
+	int flag;
+	NodeData data;
+}NODE;
+
+TREE* searchN(TREE* root, char x);   //반복방법
+TREE* searchN_r(TREE* root, char x); //재귀방법
+
+void insertN(TREE** p, char x);
+TREE* insertN_r(TREE* p, char x);
+
+void deleteN(TREE** root, element key);
+TREE* deleteN_r(TREE* root, element key);
+
+//트리의 가장 왼쪽 노드 찾기
+TREE* m_v_n(TREE* node)
+{
+	TREE* current = node;
+
+	while (current->left != NULL)
+		current = current->left;
+
+	return current;
+}
+
+
+//트리 찾기
+TREE* searchN(TREE* root, char x) {
+	TREE* p = NULL;
+	p = root;
+	while (p != NULL) {
+		if (x < p->key) {
+			p = p->left;
+		}
+		else if (x == p->key) {
+			return p;
+		}
+		else {
+			p = p->right;
+		}
+	}
+	printf("\n Wrong Key\n");
+	return p;
+}
+
+TREE* searchN_r(TREE* root, char x) {
+	TREE* p = NULL;
+	p = root;
+	while (p != NULL) {
+		if (x < p->key) {
+			return searchN_r(p->left, x);
+		}
+		else if (x == p->key) {
+			return p;
+		}
+		else {
+			return searchN_r(p->right, x);
+		}
+	}
+}
+
+//트리 삽입
+void insertN(TREE** p, char x) {
+	TREE* newN = NULL;
+	TREE* cur = p;
+	TREE* q = NULL;
+
+	while (cur != NULL) {
+		if (cur->key == x) {
+			printf("key here\n");
+			return;
+		}
+		q = cur;
+		if (x < cur->key) {
+			cur = cur->left;
+		}
+		else {
+			cur = cur->right;
+		}
+	}
+	newN = (TREE*)calloc(1, sizeof(TREE));
+	newN->key = x;
+	newN->left = NULL;
+	newN->right = NULL;
+
+	if (q != NULL){
+		if (x < q->key) {
+			q->left = newN;
+		}
+		else {
+			q->left = newN;
+		}
+	}
+	else {
+		*p = newN;
+	}
+}
+
+TREE* insertN_r(TREE* p, char x) {
+	TREE* newN = NULL;
+
+	if (p == NULL) {
+		newN = (TREE*)calloc(1, sizeof(TREE));
+		newN->key = x;
+		newN->left = NULL;
+		newN->right = NULL;
+		return newN;
+	}
+	else if (x < p->key)
+	{
+		p->left = insertN_r(p->left, x);
+	}
+	else if (x < p->key)
+	{
+		p->right = insertN_r(p->right, x);
+	}
+	else {
+		printf("\nsame key\n");
+	}
+
+	return p;
+}
+
+void deleteN(TREE** root, element key)
+{
+	TREE *parent = NULL, *p = NULL, *succ = NULL, *succ_p = NULL;
+	TREE* child = NULL;
+
+	p = *root;
+
+	while((p != NULL) && (p->key != key))
+	{
+		parent = p;
+		if (key < p->key) {
+			p = p->left;
+		}
+		else {
+			p = p->right;
+		}
+	}
+	if (p == NULL) {
+		printf("\n 키가 없다.");
+		return;
+	}
+
+	if ((p->left == NULL) && (p->right == NULL)) {
+		if (parent != NULL) {
+			if (parent->left == p) {
+				parent->left = NULL;
+			}
+			else {
+				parent->right = NULL;
+			}
+		}
+		else
+		{
+			*root = NULL;
+		}
+	}
+	else if ((p->left == NULL) || (p->right == NULL))
+	{
+		if (p->left != NULL) {
+			child = p->right;
+		}
+		else {
+			child = p->left;
+		}
+		if(parent != NULL)
+		{
+			if (parent->left == p) {
+				parent->left = child;
+			}
+			else {
+				parent->left = child;
+			}
+		}
+		else {
+			*root = child;
+		}
+	}
+	else {
+		succ_p = p;
+
+		succ = p->left;
+
+		while (succ->right != NULL)
+		{
+			succ_p = succ;
+			succ = succ->right;
+		}
+		if (succ_p->left == succ) {
+			succ_p->left = succ->left;
+		}
+		else {
+			succ_p->right = succ->left;
+		}
+		p->key = succ->key;
+		p = succ;
+	}
+	free(p);
+}
+
+TREE* deleteN_r(TREE* root, element key)
+{
+	TREE* temp;
+
+	if (root == NULL) return root;
+
+	if (key < root->key)
+		root->left = deleteN_r(root->left, key);
+
+	else if (key > root->key)
+		root->right = deleteN_r(root->right, key);
+	else {
+		if (root->left == NULL) {
+			temp = root->right;
+			free(root);
+			return temp;
+		}
+		else if(root->right == NULL)
+		{
+			temp = root->right;
+			free(root);
+			return temp;
+		}
+		temp = m_v_n(root->right);
+
+		root->key = temp->key;
+		root->right = deleteN_r(root->right, temp->key);
+	}
+	return root;
+}
