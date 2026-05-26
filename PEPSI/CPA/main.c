@@ -1,19 +1,24 @@
 #define _CRT_SECURE_NO_WARNINGS
 
+// CPA(Correlation Power Analysis) 공격 구현
+// - 전력 트레이스와 해밍 가중치 모델의 Pearson 상관계수를 이용해 AES 키 복구
+
 #include <stdio.h>
 #include <stdlib.h>
 #include <stdint.h>
 #include <time.h>
-#include <math.h> // sqrt 함수 사용을 위한 헤더 추가
+#include <math.h>
+#include <string.h>
 
 #include "params.h"
 #include "file_read.h"
 
-// ---- [최적화] SPA 분석을 통해 찾아낸 SubBytes(S-box) 연산 구간 ----
-#define START_POINT 0   // 분석 시작 포인트
-#define END_POINT   3724  // 분석 종료 포인트
-// -----------------------------------------------------------------
+// 상관계수를 계산할 전력 트레이스의 분석 구간 (포인트 인덱스)
+#define START_POINT 0
+#define END_POINT   3724
 
+// AES SubBytes 치환 테이블 (S-box)
+// 1라운드 중간값 intermediate = sbox[pt ^ key] 계산에 사용
 const uint8_t sbox[256] = {
     0x63, 0x7c, 0x77, 0x7b, 0xf2, 0x6b, 0x6f, 0xc5, 0x30, 0x01, 0x67, 0x2b, 0xfe, 0xd7, 0xab, 0x76,
     0xca, 0x82, 0xc9, 0x7d, 0xfa, 0x59, 0x47, 0xf0, 0xad, 0xd4, 0xa2, 0xaf, 0x9c, 0xa4, 0x72, 0xc0,
@@ -33,25 +38,35 @@ const uint8_t sbox[256] = {
     0x8c, 0xa1, 0x89, 0x0d, 0xbf, 0xe6, 0x42, 0x68, 0x41, 0x99, 0x2d, 0x0f, 0xb0, 0x54, 0xbb, 0x16
 };
 
-// 해밍 웨이트(Hamming Weight) 계산 함수
-int get_hw(uint8_t value)
-{
-    int count = 0;
-    for (int i = 0; i < 8; i++)
-    {
-        if ((value >> i) & 1) count++;
-    }
-    return count;
-}
+// 해밍 가중치 룩업 테이블: hw_table[v] = v의 2진수에서 1의 개수
+// 전력 소비 모델로 사용 (HW 모델: 전력 ∝ 처리하는 값의 비트 수)
+static const uint8_t hw_table[256] = {
+    0,1,1,2,1,2,2,3,1,2,2,3,2,3,3,4,
+    1,2,2,3,2,3,3,4,2,3,3,4,3,4,4,5,
+    1,2,2,3,2,3,3,4,2,3,3,4,3,4,4,5,
+    2,3,3,4,3,4,4,5,3,4,4,5,4,5,5,6,
+    1,2,2,3,2,3,3,4,2,3,3,4,3,4,4,5,
+    2,3,3,4,3,4,4,5,3,4,4,5,4,5,5,6,
+    2,3,3,4,3,4,4,5,3,4,4,5,4,5,5,6,
+    3,4,4,5,4,5,5,6,4,5,5,6,5,6,6,7,
+    1,2,2,3,2,3,3,4,2,3,3,4,3,4,4,5,
+    2,3,3,4,3,4,4,5,3,4,4,5,4,5,5,6,
+    2,3,3,4,3,4,4,5,3,4,4,5,4,5,5,6,
+    3,4,4,5,4,5,5,6,4,5,5,6,5,6,6,7,
+    2,3,3,4,3,4,4,5,3,4,4,5,4,5,5,6,
+    3,4,4,5,4,5,5,6,4,5,5,6,5,6,6,7,
+    3,4,4,5,4,5,5,6,4,5,5,6,5,6,6,7,
+    4,5,5,6,5,6,6,7,5,6,6,7,6,7,7,8
+};
 
 void fileReadTest()
 {
     uint8_t** pt = NULL;
     float** trace = NULL;
-    FILE* ptFile = fopen(PT_PATH, "rt");
-    FILE* traceFile = fopen(TRACE_PATH, "rb");
 
-    fseek(traceFile, 32, SEEK_CUR);
+    // 평문 파일(텍스트)과 전력 트레이스 파일(바이너리) 열기
+    FILE* ptFile    = fopen(PT_PATH,    "rt");
+    FILE* traceFile = fopen(TRACE_PATH, "rb");
 
     if (traceFile == NULL || ptFile == NULL)
     {
@@ -59,20 +74,24 @@ void fileReadTest()
         return;
     }
 
-    pt = (uint8_t**)calloc(NUM_TRACE, sizeof(uint8_t*));
-    trace = (float**)calloc(NUM_TRACE, sizeof(float*));
+    // 트레이스 파일 앞 32바이트는 장비 헤더 정보이므로 건너뜀
+    fseek(traceFile, 32, SEEK_CUR);
+
+    // 2D 배열 동적 할당: pt[NUM_TRACE][16], trace[NUM_TRACE][NUM_POINT]
+    pt    = (uint8_t**)calloc(NUM_TRACE, sizeof(uint8_t*));
+    trace = (float**)  calloc(NUM_TRACE, sizeof(float*));
     for (int traceIdx = 0; traceIdx < NUM_TRACE; traceIdx++)
     {
-        pt[traceIdx] = (uint8_t*)calloc(16, sizeof(uint8_t));
-        trace[traceIdx] = (float*)calloc(NUM_POINT, sizeof(float));
+        pt[traceIdx]    = (uint8_t*)calloc(16,        sizeof(uint8_t));
+        trace[traceIdx] = (float*)  calloc(NUM_POINT, sizeof(float));
     }
 
+    // 파일에서 데이터 읽기
     if (ptFileRead(pt, ptFile) != 0)
     {
         printf("ptFileRead error\n");
         return;
     }
-
     if (traceFileRead(trace, traceFile) != 0)
     {
         printf("traceFileRead error\n");
@@ -82,173 +101,142 @@ void fileReadTest()
     fclose(traceFile);
     fclose(ptFile);
 
-    // 테스트 출력
+    // 로드 확인: 첫 번째 트레이스의 평문 16바이트 출력
     printf("[ptFileRead Test]\n");
     for (int byteIdx = 0; byteIdx < 16; byteIdx++)
-    {
         printf("%02x ", pt[0][byteIdx]);
-    }
     printf("\n");
 
+    // 로드 확인: 첫 번째 트레이스의 전력 샘플 16개 출력
     printf("[traceFileRead Test]\n");
     for (int pointIdx = 0; pointIdx < 16; pointIdx++)
-    {
         printf("%f ", trace[0][pointIdx]);
-    }
     printf("\n");
 
-    // 파이썬 시각화를 위해 trace[0]을 txt 파일로 저장
+    // 첫 번째 트레이스 전체를 파일로 저장 (파형 시각화용)
     FILE* f_out = fopen("trace0.txt", "w");
     if (f_out != NULL)
     {
         for (int p = 0; p < NUM_POINT; p++)
-        {
             fprintf(f_out, "%f\n", trace[0][p]);
-        }
         fclose(f_out);
-        printf("\n[SPA 준비] trace0.txt 파일 저장 완료!\n");
+        printf("\n[SPA] trace0.txt saved\n");
     }
 
-    // 수행 시간 측정 시작
-    double start, end;
-    start = (double)clock() / CLOCKS_PER_SEC;
-
-    // 전체 16바이트 정답 키를 저장할 배열
+    double start = (double)clock() / CLOCKS_PER_SEC;
     uint8_t finalKey[16] = { 0, };
 
-    printf("\n[전체 16바이트 CPA 분석 시작 (Hamming Weight 모델 적용)]\n");
-    printf("- 타겟 분석 구간: %d ~ %d Points\n\n", START_POINT, END_POINT);
+    printf("\n[CPA %d~%d Points]\n\n", START_POINT, END_POINT);
 
-    // [최적화 1] 추측 키(keyGuess)에 영향을 받지 않는 파형 데이터 사전 연산
-    // 모든 추측 키에서 동일하게 사용되므로 바이트 루프 진입 전에 한 번만 계산하여 시간을 크게 단축합니다.
-    float* sumX = (float*)calloc(NUM_POINT, sizeof(float));
-    float* sumX2 = (float*)calloc(NUM_POINT, sizeof(float));
+    // --- 사전 계산: X(전력) 통계량 ---
+    // Pearson 공식에서 sumX, sumX2는 키 추측과 무관하므로 루프 밖에서 1회만 계산
+    float* sumX  = (float*)calloc(NUM_POINT, sizeof(float)); // Σ X
+    float* sumX2 = (float*)calloc(NUM_POINT, sizeof(float)); // Σ X²
+    float* sumXY = (float*)malloc(NUM_POINT * sizeof(float)); // Σ X·Y (키마다 갱신)
 
     for (int traceIdx = 0; traceIdx < NUM_TRACE; traceIdx++)
     {
         for (int pointIdx = START_POINT; pointIdx < END_POINT; pointIdx++)
         {
-            sumX[pointIdx] += trace[traceIdx][pointIdx];
+            sumX[pointIdx]  += trace[traceIdx][pointIdx];
             sumX2[pointIdx] += trace[traceIdx][pointIdx] * trace[traceIdx][pointIdx];
         }
     }
 
-    // 타겟 바이트 루프 (0번 ~ 15번 바이트)
+    // 루프 내부에서 반복 선언을 피하기 위해 루프 밖에서 선언
+    float     sumY, sumY2, currentKeyMax;          // Y(HW) 통계량 및 현재 키의 최대 상관계수
+    float     denominator_x, denominator_y, denominator, numerator, r; // Pearson 계산용
+    uint8_t   intermediate;                        // S-box 출력값 (중간값)
+    int       hw, currentKeyMaxPoint, bestPoint;   // HW값, 현재/최종 최대 피크 포인트
+
+    // --- 메인 CPA 루프: 16바이트 키를 1바이트씩 복구 ---
     for (int targetByte = 0; targetByte < 16; targetByte++)
     {
-        float bestPeak = 0.0f;       // 현재 바이트의 가장 큰 상관계수 절댓값(1등)
-        float secondBestPeak = 0.0f; // 현재 바이트의 두 번째로 큰 상관계수 절댓값(2등)
-        uint8_t bestKey = 0;         // 1등 피크일 때의 추측 키
+        float   bestPeak       = 0.0f; // 256개 키 후보 중 가장 높은 상관계수
+        float   secondBestPeak = 0.0f; // 두 번째로 높은 상관계수 (신뢰도 판단용)
+        uint8_t bestKey        = 0;
+        bestPoint              = 0;
 
-        printf("Target Byte %2d 분석 중 ", targetByte);
+        printf("Target Byte %2d ... ", targetByte);
 
-        // 키 추측 루프 (0x00 ~ 0xFF)
+        // 키 후보 0x00~0xFF 전수 탐색
         for (int keyGuess = 0; keyGuess < 256; keyGuess++)
         {
-            float sumY = 0.0f;  // 현재 키 추측에 대한 전체 트레이스의 HW 합
-            float sumY2 = 0.0f; // 현재 키 추측에 대한 전체 트레이스의 HW 제곱 합
-            float* sumXY = (float*)calloc(NUM_POINT, sizeof(float)); // 파형과 HW의 곱의 합
+            // 이 키 후보에 대한 통계량 초기화
+            sumY             = 0.0f;
+            sumY2            = 0.0f;
+            currentKeyMax    = 0.0f;
+            currentKeyMaxPoint = 0;
+            memset(sumXY, 0, NUM_POINT * sizeof(float));
 
-            // 파형 순회 루프
+            // 트레이스별 HW 모델 계산 및 Σ XY 누적
             for (int traceIdx = 0; traceIdx < NUM_TRACE; traceIdx++)
             {
-                // 중간값 계산 및 해밍 웨이트 도출
-                uint8_t intermediate = sbox[pt[traceIdx][targetByte] ^ keyGuess];
-                int hw = get_hw(intermediate);
-
-                // Y 및 Y^2 누적
-                sumY += hw;
-                sumY2 += (hw * hw);
-
-                // XY 누적 (분석 구간만)
+                // 중간값: AES 1라운드 SubBytes(pt XOR key)
+                intermediate = sbox[pt[traceIdx][targetByte] ^ keyGuess];
+                // 전력 소비 모델: HW(중간값)
+                hw            = hw_table[intermediate];
+                sumY         += hw;       // Σ Y
+                sumY2        += hw * hw;  // Σ Y²
+                // 포인트별 Σ X·Y 누적
                 for (int pointIdx = START_POINT; pointIdx < END_POINT; pointIdx++)
-                {
                     sumXY[pointIdx] += trace[traceIdx][pointIdx] * hw;
-                }
             }
 
-            // 포인트별 피어슨 상관계수(Pearson Correlation Coefficient) 계산
-            float currentKeyMax = 0.0f;
+            // 포인트별 Pearson 상관계수 r 계산 후 최대값 탐색
+            // r = (N·ΣXY - ΣX·ΣY) / sqrt((N·ΣX² - (ΣX)²)·(N·ΣY² - (ΣY)²))
             for (int pointIdx = START_POINT; pointIdx < END_POINT; pointIdx++)
             {
-                // 분모 계산
-                float denominator_x = (NUM_TRACE * sumX2[pointIdx]) - (sumX[pointIdx] * sumX[pointIdx]);
-                float denominator_y = (NUM_TRACE * sumY2) - (sumY * sumY);
-
-                // 분모가 0이하가 되는 예외 상황(분산이 0) 방지
+                denominator_x = (NUM_TRACE * sumX2[pointIdx]) - (sumX[pointIdx] * sumX[pointIdx]);
+                denominator_y = (NUM_TRACE * sumY2) - (sumY * sumY);
+                // 분산이 0이면 상관계수 정의 불가 → 건너뜀
                 if (denominator_x <= 0.0f || denominator_y <= 0.0f) continue;
-
-                float denominator = sqrt(denominator_x * denominator_y);
-
-                // 분자 계산
-                float numerator = (NUM_TRACE * sumXY[pointIdx]) - (sumX[pointIdx] * sumY);
-
-                // 상관계수 r 계산
-                float r = numerator / denominator;
-
-                // 절댓값 처리
-                if (r < 0) r = -r;
-
-                // 현재 키에서 가장 높은 상관계수 갱신
-                if (r > currentKeyMax) currentKeyMax = r;
+                denominator = sqrtf(denominator_x * denominator_y);
+                numerator   = (NUM_TRACE * sumXY[pointIdx]) - (sumX[pointIdx] * sumY);
+                r = fabsf(numerator / denominator); // 절댓값: 음의 상관도 동일하게 처리
+                if (r > currentKeyMax) { currentKeyMax = r; currentKeyMaxPoint = pointIdx; }
             }
 
-            // 1등 피크(bestPeak)와 2등 피크(secondBestPeak) 저장
+            // 1위/2위 피크 갱신
             if (currentKeyMax > bestPeak)
             {
-                secondBestPeak = bestPeak;   // 기존 1등을 2등으로
-                bestPeak = currentKeyMax;    // 새로운 1등 기록
-                bestKey = (uint8_t)keyGuess;
+                secondBestPeak = bestPeak;
+                bestPeak       = currentKeyMax;
+                bestKey        = (uint8_t)keyGuess;
+                bestPoint      = currentKeyMaxPoint; // 최고 상관계수가 나타난 포인트 저장
             }
             else if (currentKeyMax > secondBestPeak)
             {
-                secondBestPeak = currentKeyMax; // 2등만 갱신
+                secondBestPeak = currentKeyMax;
             }
 
-            free(sumXY); // 동적 할당 해제
-            if (keyGuess % 32 == 0) printf("."); // 진행률 표시
+            if (keyGuess % 32 == 0) printf(".");
         }
 
-        // 정답 키 배열에 저장
         finalKey[targetByte] = bestKey;
 
-        // 개별 바이트 내부 Ratio 계산 및 출력
-        float ratio = 0.0f;
-        if (secondBestPeak > 0.0f)
-        {
-            ratio = bestPeak / secondBestPeak;
-        }
-
-        if (ratio >= 1.2f)
-        {
-            printf(" 완료! (Key: %02X, Ratio: %.2f) -> 올바른 키를 찾았습니다.\n", bestKey, ratio);
-        }
-        else
-        {
-            printf(" 완료! (Key: %02X, Ratio: %.2f) -> 다시 찾아보세요.\n", bestKey, ratio);
-        }
+        // Ratio = 1위 피크 / 2위 피크: 1.2 이상이면 키가 명확히 분리된 것으로 판단
+        float ratio = (secondBestPeak > 0.0f) ? (bestPeak / secondBestPeak) : 0.0f;
+        printf(" done! (Key: %02X, Peak: %.4f @ Point %4d, Ratio: %.2f) -> %s\n",
+               bestKey, bestPeak, bestPoint, ratio,
+               ratio >= 1.2f ? "correct key found" : "low confidence");
     }
 
-    // 사전 연산에 사용된 배열 동적 할당 해제
     free(sumX);
     free(sumX2);
+    free(sumXY);
 
-    // 수행 시간 측정 종료
-    end = (((double)clock()) / CLOCKS_PER_SEC);
+    double end = (double)clock() / CLOCKS_PER_SEC;
 
-    // [최종 결과 출력]
     printf("\n========================================\n");
-    printf("최종 복구된 16바이트 AES 키 (HEX)  : ");
+    printf("AES Key (HEX)  : ");
     for (int i = 0; i < 16; i++) printf("%02X ", finalKey[i]);
-
-    printf("\n최종 복구된 16바이트 AES 키 (문자) : ");
+    printf("\nAES Key (ASCII): ");
     for (int i = 0; i < 16; i++) printf("%c", finalKey[i]);
-
-    // 프로그램 수행 시간 출력
-    printf("\n\n프로그램 수행 시간 : %lf 초\n", (end - start));
+    printf("\n\nElapsed: %lf sec\n", end - start);
     printf("========================================\n");
 
-    // 동적할당 메모리 해제
+    // 동적 할당 메모리 해제
     for (int traceIdx = 0; traceIdx < NUM_TRACE; traceIdx++)
     {
         free(pt[traceIdx]);
