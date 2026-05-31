@@ -289,6 +289,100 @@ void showTree(TREE* root) {
 	printf("\n");
 }
 
+TREE* insert_AVL(TREE** root, element x) {
+	if (*root == NULL) {
+		*root = (TREE*)calloc(1, sizeof(TREE));
+		(*root)->key = x;
+		(*root)-> left= NULL;
+		(*root)->left = NULL;
+	}
+
+	else if(x < (*root)->key)
+	{
+		(*root)->left = insert_AVL(&((*root)->left), x);
+		*root = reblan(root);
+	}
+	else if (x > (*root)->key)
+	{
+		(*root)->left = insert_AVL(&((*root)->right), x);
+		*root = reblan(root);
+	}
+	else {
+		return NULL;
+	}
+	return *root;
+}
+
+void del_AVL(TREE** root, element key) {
+	deleteN(root, key);
+	*root = reblan(root);
+}
+
+TREE* reblan(TREE** p)
+{
+	int BF = getBF(*p);
+
+	if (BF > 1)
+	{
+		if (getBF((*p)->left) >= 0) //LL
+		{
+			*p = LL_r(*p);
+		}
+		else
+		{
+			*p = LR_r(*p);
+		}
+	}
+
+	else if (BF < -1)
+	{
+		if (getBF((*p)->right) <= 0) //RR
+		{
+			*p = RR_r(*p);
+		}
+		else
+		{
+			*p = RL_r(*p);
+		}
+	}
+	return *p;
+}
+
+int getBF(TREE* p) {
+	if (p = NULL) {
+		return 0;
+	}
+	return getH(p->left) - getH(p->right);
+}
+
+int getH(TREE* p) {
+	int height = 0;
+	if (p != NULL) {
+		height = MAX(getH(p->left), getH(p->right)) + 1;
+	}
+	return height;
+}
+
+TREE* LL_r(TREE* parent) {
+	TREE* child = parent->left;
+	parent->left = child->right;
+	child->right = parent;
+	return child;
+}
+
+TREE* RR_r(TREE* parent) {
+	TREE* child = parent->right;
+	parent->right = child->left;
+	child->left = parent;
+	return child;
+}
+
+TREE* LR_r(TREE* parent) {
+	TREE* child = parent->right;
+	parent->left = LL_r(child);
+	return RR_r(parent);
+}
+
 int main() {
 	TREE* root = NULL;
 	TREE* foundedNode = NULL;
