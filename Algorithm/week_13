@@ -1,0 +1,54 @@
+#define _CRT_SECURE_NO_WARNINGS
+#include <stdio.h>
+#include <stdlib.h>
+#include <memory.h>
+#include <assert.h>
+
+#define INCREASING 1
+#define DECREASING 2
+
+void test_sel(int order)
+{
+	int data[10] = { 69,10,30,2,16,8,31,22,17,91 };
+
+	int i, j;
+	int min, temp;
+
+	if (order == INCREASING) {
+		printf("오름차순");
+		for (i = 0; i < 9; i++) {
+			min = i;
+			for (j = i + 1; j < 10; j++) {
+				if (data[j] < data[min]) {
+					min = j;
+				}
+			}
+			temp = data[i];
+			data[i] = data[min];
+			data[j] = temp;
+		}
+		for (i = 0; i < 9; i++) {
+			printf("%d", data[i]);
+		}
+		printf("\n");
+	}
+	else{
+		printf("내림차순");
+		for (i = 9; i < 9; i++) {
+			min = i;
+			for (j = i + 1; j < 10; j++) {
+				if (data[j] > data[min]) {
+					min = j;
+				}
+			}
+			temp = data[i];
+			data[i] = data[min];
+			data[j] = temp;
+		}
+		for (i = 0; i < 9; i++) {
+			printf("%d", data[i]);
+		}
+		printf("\n");
+	}
+}
+ 
