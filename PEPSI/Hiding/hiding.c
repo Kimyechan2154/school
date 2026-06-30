@@ -1,15 +1,16 @@
 #define _CRT_SECURE_NO_WARNINGS
 
 #include <stdio.h>
-#include <stdint.h> //8비트 정수 사용을 위함
+#include <stdint.h>
+#include <stdlib.h> // 난수 생성을 위한 헤더
+#include <time.h>   // 랜덤 시드 설정을 위한 헤더
 
-typedef uint8_t byte; //8비트 부호없는 정수형을 byte로 정의
+typedef uint8_t byte;
 
-#define AES_BLOCK_SIZE 16 // AES 블록 크기 (16바이트)
-#define AES_ROUND_SIZE 16 //각 라운드 키 크기 (16바이트)
-#define AES_KEY_SIZE 16 // AES 키 크기 (16바이트, 128비트)
+#define AES_BLOCK_SIZE 16
+#define AES_ROUND_SIZE 16
+#define AES_KEY_SIZE 16
 
-// AES 표준 S-Box (값 변경 방지를 위해 const 사용)
 const byte sbox[256] = {
 	0x63, 0x7c, 0x77, 0x7b, 0xf2, 0x6b, 0x6f, 0xc5, 0x30, 0x01, 0x67, 0x2b, 0xfe, 0xd7, 0xab, 0x76,
 	0xca, 0x82, 0xc9, 0x7d, 0xfa, 0x59, 0x47, 0xf0, 0xad, 0xd4, 0xa2, 0xaf, 0x9c, 0xa4, 0x72, 0xc0,
@@ -29,44 +30,49 @@ const byte sbox[256] = {
 	0x8c, 0xa1, 0x89, 0x0d, 0xbf, 0xe6, 0x42, 0x68, 0x41, 0x99, 0x2d, 0x0f, 0xb0, 0x54, 0xbb, 0x16
 };
 
-//byte xtime(byte x) {
-//	if (x & 0x80) { //오버플로우 발생시
-//		return (x << 1) ^ 0x1b;
-//	}
-//	else {
-//		return (x << 1);
-//	}
-//}
-
 static inline byte xtime(byte x) {
-	return (x << 1) ^ (((x >> 7) & 1) * 0x1b); // 피드백 새로 만든  xtime
+	return (x << 1) ^ (((x >> 7) & 1) * 0x1b);
 }
 
 const byte Rcon[10] = {
-	0x01, 0x02, 0x04, 0x08, 0x10, 0x20, 0x40, 0x80, 0x1b, 0x36 //피드백 더미데이터 삭제
+	0x01, 0x02, 0x04, 0x08, 0x10, 0x20, 0x40, 0x80, 0x1b, 0x36
 };
 
-void SubBytes(byte state[16]) {
-	for (int byte_idx = 0; byte_idx < AES_BLOCK_SIZE; byte_idx++)
-	{
-		state[byte_idx] = sbox[state[byte_idx]]; // S-Box를 사용하여 바이트 치환
+// [추가] 피셔-예이츠 셔플 기반 사전 인덱스 생성 함수
+void GenerateShuffledIndices(byte* indices) {
+	// 1. 0 ~ 15 순서대로 인덱스 초기화
+	for (int i = 0; i < AES_BLOCK_SIZE; i++) {
+		indices[i] = i;
+	}
+	
+	// 2. 뒤에서부터 역순으로 랜덤하게 자리 바꾸기 (중복 방지)
+	for (int i = AES_BLOCK_SIZE - 1; i > 0; i--) {
+		int j = rand() % (i + 1);
+		byte temp = indices[i];
+		indices[i] = indices[j];
+		indices[j] = temp;
+	}
+}
+
+// [수정] 사전 연산된 인덱스를 받아 SubBytes 수행
+void SubBytes(byte state[16], const byte* shuffled_idx) {
+	for (int i = 0; i < AES_BLOCK_SIZE; i++) {
+		byte idx = shuffled_idx[i]; // 셔플링된 인덱스 호출
+		state[idx] = sbox[state[idx]];
 	}
 }
 
 void ShiftRows(byte state[16]) {
-	
 	byte temp;
-	// 2번째 행 시프트
 	temp = state[1];
 	state[1] = state[5];
 	state[5] = state[9];
 	state[9] = state[13];
 	state[13] = temp;
-	// 3번째 행 시프트
+
 	temp = state[2]; state[2] = state[10]; state[10] = temp;
 	temp = state[6]; state[6] = state[14]; state[14] = temp;
 
-	// 4번째 행 시프트
 	temp = state[3];
 	state[3] = state[15];
 	state[15] = state[11];
@@ -76,53 +82,47 @@ void ShiftRows(byte state[16]) {
 
 void MixColumns(byte state[16]) {
 	byte s0, s1, s2, s3;
-
 	for (int i = 0; i < 16; i += 4) {
 		s0 = state[i];
 		s1 = state[i + 1];
 		s2 = state[i + 2];
-		s3 = state[i + 3]; //백업
+		s3 = state[i + 3];
 
-		state[i] = xtime(s0) ^ (xtime(s1) ^ s1) ^ s2 ^ s3; // 2 3 1 1
-		state[i + 1] = s0 ^ xtime(s1) ^ (xtime(s2) ^ s2) ^ s3; // 1 2 3 1
-		state[i + 2] = s0 ^ s1 ^ xtime(s2) ^ (xtime(s3) ^ s3); // 1 1 2 3
-		state[i + 3] = (xtime(s0) ^ s0) ^ s1 ^ s2 ^ xtime(s3); // 3 1 1 2
+		state[i] = xtime(s0) ^ (xtime(s1) ^ s1) ^ s2 ^ s3;
+		state[i + 1] = s0 ^ xtime(s1) ^ (xtime(s2) ^ s2) ^ s3;
+		state[i + 2] = s0 ^ s1 ^ xtime(s2) ^ (xtime(s3) ^ s3);
+		state[i + 3] = (xtime(s0) ^ s0) ^ s1 ^ s2 ^ xtime(s3);
 	}
 }
 
 void KeyExpansion(byte key[16], byte roundKeys[11][16]) {
-
 	byte* expandedkey = (byte*)roundKeys;
 	byte temp[4];
 
-	
 	for (int i = 0; i < 16; i++) {
 		expandedkey[i] = key[i];
 	}
 	for (int i = 16; i < 176; i += 4) {
-
 		temp[0] = expandedkey[i - 4];
 		temp[1] = expandedkey[i - 3];
 		temp[2] = expandedkey[i - 2];
 		temp[3] = expandedkey[i - 1];
 
 		if (i % 16 == 0) {
-
-			byte t = temp[0]; //배열후 회전
+			byte t = temp[0];
 			temp[0] = temp[1];
 			temp[1] = temp[2];
 			temp[2] = temp[3];
 			temp[3] = t;
 
-			temp[0] = sbox[temp[0]]; //S-Box 치환
+			temp[0] = sbox[temp[0]];
 			temp[1] = sbox[temp[1]];
 			temp[2] = sbox[temp[2]];
 			temp[3] = sbox[temp[3]];
 
-			temp[0] ^= Rcon[(i / 16)-1]; //Rcon 상수 더하기 + 피드백
+			temp[0] ^= Rcon[(i / 16) - 1];
 		}
 
-		//최종 계산 및 저장
 		expandedkey[i] = expandedkey[i - 16] ^ temp[0];
 		expandedkey[i + 1] = expandedkey[i - 15] ^ temp[1];
 		expandedkey[i + 2] = expandedkey[i - 14] ^ temp[2];
@@ -130,46 +130,66 @@ void KeyExpansion(byte key[16], byte roundKeys[11][16]) {
 	}
 }
 
-void AddRoundKey(byte state[16], byte roundKey[16]) {
-	for (int byte_idx = 0; byte_idx < AES_BLOCK_SIZE; byte_idx++) {
-		state[byte_idx] ^= roundKey[byte_idx]; // 라운드 키와 상태를 XOR 연산
+// [수정] 사전 연산된 인덱스를 받아 AddRoundKey 수행
+void AddRoundKey(byte state[16], byte roundKey[16], const byte* shuffled_idx) {
+	for (int i = 0; i < AES_BLOCK_SIZE; i++) {
+		byte idx = shuffled_idx[i]; // 셔플링된 인덱스 호출
+		state[idx] ^= roundKey[idx];
 	}
 }
 
 void AES_Encrypt(byte input[16], byte roundKeys[11][16]) {
+	byte shuffled_idx[16];
 
-	AddRoundKey(input, roundKeys[0]); // 초기 라운드 키 추가
+	// 초기 라운드
+	GenerateShuffledIndices(shuffled_idx); // 새로운 순서 생성
+	AddRoundKey(input, roundKeys[0], shuffled_idx); 
 
+	// 1 ~ 9 라운드
 	for (int round = 1; round <= 9; round++) {
-		SubBytes(input);
+		GenerateShuffledIndices(shuffled_idx); // 보안성 강화를 위해 매번 새로 섞음
+		SubBytes(input, shuffled_idx);
+		
 		ShiftRows(input);
-		MixColumns(input); // 10라운드 까지만
-		AddRoundKey(input, roundKeys[round]);
+		MixColumns(input); 
+		
+		GenerateShuffledIndices(shuffled_idx); 
+		AddRoundKey(input, roundKeys[round], shuffled_idx);
 	}
-	SubBytes(input);
+	
+	// 10 라운드 (마지막 라운드)
+	GenerateShuffledIndices(shuffled_idx); 
+	SubBytes(input, shuffled_idx);
 	ShiftRows(input);
-	AddRoundKey(input, roundKeys[10]); // 마지막 라운드 키 추가
-} // xtime 함수 구현 // 믹스컬럼 f함수 구현 끝 결과값 키스케쥴 확인 암호문 확인
+	
+	GenerateShuffledIndices(shuffled_idx); 
+	AddRoundKey(input, roundKeys[10], shuffled_idx);
+}
 
 int main() {
-	byte key[16] = { //더미 추가
+	// 매 실행마다 랜덤한 셔플링을 보장하기 위한 시드 설정
+	srand((unsigned int)time(NULL));
+
+	byte key[16] = {
 		0x2b, 0x7e, 0x15, 0x16, 0x28, 0xae, 0xd2, 0xa6,
 		0xab, 0xf7, 0x15, 0x88, 0x09, 0xcf, 0x4f, 0x3c
-	}; // fips197에 정해진 비밀키
+	};
 
-	byte plaintext[16] = { //더미 추가
+	byte plaintext[16] = {
 		0x32, 0x43, 0xf6, 0xa8, 0x88, 0x5a, 0x30, 0x8d,
 		0x31, 0x31, 0x98, 0xa2, 0xe0, 0x37, 0x07, 0x34
-	}; // fips197에 정해진 평문
+	}; 
 
-	byte AES_secret_key[11][16]; //AES 키 생성
+	byte AES_secret_key[11][16];
 
-	KeyExpansion(key, AES_secret_key); //키 세팅
+	KeyExpansion(key, AES_secret_key);
 
-	AES_Encrypt(plaintext, AES_secret_key); //평문 ->암호문 변환
+	AES_Encrypt(plaintext, AES_secret_key);
 
 	for (int i = 0; i < 16; i++) {
 		printf("%02x ", plaintext[i]);
-	} //결과 출력
+	}
 	printf("\n");
+	
+	return 0;
 }
