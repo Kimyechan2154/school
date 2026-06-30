@@ -2,8 +2,8 @@
 
 #include <stdio.h>
 #include <stdint.h>
-#include <stdlib.h> // 난수 생성을 위한 헤더
-#include <time.h>   // 랜덤 시드 설정을 위한 헤더
+#include <stdlib.h> 
+#include <time.h>   
 
 typedef uint8_t byte;
 
@@ -38,14 +38,11 @@ const byte Rcon[10] = {
 	0x01, 0x02, 0x04, 0x08, 0x10, 0x20, 0x40, 0x80, 0x1b, 0x36
 };
 
-// [추가] 피셔-예이츠 셔플 기반 사전 인덱스 생성 함수
+// 피셔-예이츠 셔플 기반 사전 인덱스 생성 함수
 void GenerateShuffledIndices(byte* indices) {
-	// 1. 0 ~ 15 순서대로 인덱스 초기화
 	for (int i = 0; i < AES_BLOCK_SIZE; i++) {
 		indices[i] = i;
 	}
-	
-	// 2. 뒤에서부터 역순으로 랜덤하게 자리 바꾸기 (중복 방지)
 	for (int i = AES_BLOCK_SIZE - 1; i > 0; i--) {
 		int j = rand() % (i + 1);
 		byte temp = indices[i];
@@ -54,142 +51,8 @@ void GenerateShuffledIndices(byte* indices) {
 	}
 }
 
-// [수정] 사전 연산된 인덱스를 받아 SubBytes 수행
+// 셔플링이 적용된 SubBytes
 void SubBytes(byte state[16], const byte* shuffled_idx) {
 	for (int i = 0; i < AES_BLOCK_SIZE; i++) {
-		byte idx = shuffled_idx[i]; // 셔플링된 인덱스 호출
-		state[idx] = sbox[state[idx]];
-	}
-}
-
-void ShiftRows(byte state[16]) {
-	byte temp;
-	temp = state[1];
-	state[1] = state[5];
-	state[5] = state[9];
-	state[9] = state[13];
-	state[13] = temp;
-
-	temp = state[2]; state[2] = state[10]; state[10] = temp;
-	temp = state[6]; state[6] = state[14]; state[14] = temp;
-
-	temp = state[3];
-	state[3] = state[15];
-	state[15] = state[11];
-	state[11] = state[7];
-	state[7] = temp;
-}
-
-void MixColumns(byte state[16]) {
-	byte s0, s1, s2, s3;
-	for (int i = 0; i < 16; i += 4) {
-		s0 = state[i];
-		s1 = state[i + 1];
-		s2 = state[i + 2];
-		s3 = state[i + 3];
-
-		state[i] = xtime(s0) ^ (xtime(s1) ^ s1) ^ s2 ^ s3;
-		state[i + 1] = s0 ^ xtime(s1) ^ (xtime(s2) ^ s2) ^ s3;
-		state[i + 2] = s0 ^ s1 ^ xtime(s2) ^ (xtime(s3) ^ s3);
-		state[i + 3] = (xtime(s0) ^ s0) ^ s1 ^ s2 ^ xtime(s3);
-	}
-}
-
-void KeyExpansion(byte key[16], byte roundKeys[11][16]) {
-	byte* expandedkey = (byte*)roundKeys;
-	byte temp[4];
-
-	for (int i = 0; i < 16; i++) {
-		expandedkey[i] = key[i];
-	}
-	for (int i = 16; i < 176; i += 4) {
-		temp[0] = expandedkey[i - 4];
-		temp[1] = expandedkey[i - 3];
-		temp[2] = expandedkey[i - 2];
-		temp[3] = expandedkey[i - 1];
-
-		if (i % 16 == 0) {
-			byte t = temp[0];
-			temp[0] = temp[1];
-			temp[1] = temp[2];
-			temp[2] = temp[3];
-			temp[3] = t;
-
-			temp[0] = sbox[temp[0]];
-			temp[1] = sbox[temp[1]];
-			temp[2] = sbox[temp[2]];
-			temp[3] = sbox[temp[3]];
-
-			temp[0] ^= Rcon[(i / 16) - 1];
-		}
-
-		expandedkey[i] = expandedkey[i - 16] ^ temp[0];
-		expandedkey[i + 1] = expandedkey[i - 15] ^ temp[1];
-		expandedkey[i + 2] = expandedkey[i - 14] ^ temp[2];
-		expandedkey[i + 3] = expandedkey[i - 13] ^ temp[3];
-	}
-}
-
-// [수정] 사전 연산된 인덱스를 받아 AddRoundKey 수행
-void AddRoundKey(byte state[16], byte roundKey[16], const byte* shuffled_idx) {
-	for (int i = 0; i < AES_BLOCK_SIZE; i++) {
-		byte idx = shuffled_idx[i]; // 셔플링된 인덱스 호출
-		state[idx] ^= roundKey[idx];
-	}
-}
-
-void AES_Encrypt(byte input[16], byte roundKeys[11][16]) {
-	byte shuffled_idx[16];
-
-	// 초기 라운드
-	GenerateShuffledIndices(shuffled_idx); // 새로운 순서 생성
-	AddRoundKey(input, roundKeys[0], shuffled_idx); 
-
-	// 1 ~ 9 라운드
-	for (int round = 1; round <= 9; round++) {
-		GenerateShuffledIndices(shuffled_idx); // 보안성 강화를 위해 매번 새로 섞음
-		SubBytes(input, shuffled_idx);
-		
-		ShiftRows(input);
-		MixColumns(input); 
-		
-		GenerateShuffledIndices(shuffled_idx); 
-		AddRoundKey(input, roundKeys[round], shuffled_idx);
-	}
-	
-	// 10 라운드 (마지막 라운드)
-	GenerateShuffledIndices(shuffled_idx); 
-	SubBytes(input, shuffled_idx);
-	ShiftRows(input);
-	
-	GenerateShuffledIndices(shuffled_idx); 
-	AddRoundKey(input, roundKeys[10], shuffled_idx);
-}
-
-int main() {
-	// 매 실행마다 랜덤한 셔플링을 보장하기 위한 시드 설정
-	srand((unsigned int)time(NULL));
-
-	byte key[16] = {
-		0x2b, 0x7e, 0x15, 0x16, 0x28, 0xae, 0xd2, 0xa6,
-		0xab, 0xf7, 0x15, 0x88, 0x09, 0xcf, 0x4f, 0x3c
-	};
-
-	byte plaintext[16] = {
-		0x32, 0x43, 0xf6, 0xa8, 0x88, 0x5a, 0x30, 0x8d,
-		0x31, 0x31, 0x98, 0xa2, 0xe0, 0x37, 0x07, 0x34
-	}; 
-
-	byte AES_secret_key[11][16];
-
-	KeyExpansion(key, AES_secret_key);
-
-	AES_Encrypt(plaintext, AES_secret_key);
-
-	for (int i = 0; i < 16; i++) {
-		printf("%02x ", plaintext[i]);
-	}
-	printf("\n");
-	
-	return 0;
-}
+		byte idx = shuffled_idx[i];
+		state
