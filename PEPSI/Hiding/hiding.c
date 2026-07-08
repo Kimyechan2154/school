@@ -30,14 +30,8 @@ static inline byte xtime(byte x) {
 const byte Rcon[10] = {
 	0x01, 0x02, 0x04, 0x08, 0x10, 0x20, 0x40, 0x80, 0x1b, 0x36
 };
-/* =====================================================================
- *  하이딩(Hiding) 인프라
- *  - rng_byte()  : 난수 소스 (데모용 xorshift)
- *                  ※ 실제 타깃 보드에서는 반드시 TRNG/DRBG로 교체할 것.
- *                    PRNG 시드가 예측되면 순열/딜레이가 복원되어 방어 무력화.
- *  - gen_perm_n(): 0~(n-1)의 무작위 순열 생성 (Fisher-Yates, 가변 길이)
- *  - random_delay(): 랜덤 딜레이 삽입(시간 축 하이딩)
- * ===================================================================== */
+
+
 static uint32_t prng_state = 0x12345678u;
 static byte rng_byte(void) {
 	uint32_t x = prng_state;
@@ -48,8 +42,6 @@ static byte rng_byte(void) {
 	return (byte)(x & 0xFF);
 }
 // 0~(n-1) 무작위 순열 (Fisher-Yates 셔플)
-// 주의: rng_byte() % (i+1) 은 모듈로 편향(modulo bias)이 존재.
-//       고신뢰 구현에서는 rejection sampling으로 편향 제거 권장.
 static void gen_perm_n(byte perm[], int n) {
 	for (int i = 0; i < n; i++) perm[i] = (byte)i;
 	for (int i = n - 1; i > 0; i--) {
