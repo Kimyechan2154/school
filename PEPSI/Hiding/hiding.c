@@ -30,21 +30,30 @@ static inline byte xtime(byte x) {
 const byte Rcon[10] = {
 	0x01, 0x02, 0x04, 0x08, 0x10, 0x20, 0x40, 0x80, 0x1b, 0x36
 };
+/* 하이딩용 난수 인프라 (LFSR 기반)
+ *  - rng_byte()     : 난수 1바이트
+ *  - gen_perm()     : 0~15 순열
+ *  - random_delay() : 랜덤 딜레이
+ */
 
+// 32비트 LFSR. seed는 0이면 안 됨.
+static uint32_t lfsr_state = 0x12345678u;
 
-static uint32_t prng_state = 0x12345678u;
 static byte rng_byte(void) {
-	uint32_t x = prng_state;
-	x ^= x << 13;
-	x ^= x >> 17;
-	x ^= x << 5;
-	prng_state = x;
-	return (byte)(x & 0xFF);
+	byte out = 0;
+	for (int i = 0; i < 8; i++) {            // 1비트씩 8번 뽑기
+		uint32_t lsb = lfsr_state & 1u;
+		lfsr_state >>= 1;
+		if (lsb) lfsr_state ^= 0x80200003u;  // 탭 피드백
+		out = (byte)((out << 1) | lsb);
+	}
+	return out;
 }
-// 0~(n-1) 무작위 순열 (Fisher-Yates 셔플)
-static void gen_perm_n(byte perm[], int n) {
-	for (int i = 0; i < n; i++) perm[i] = (byte)i;
-	for (int i = n - 1; i > 0; i--) {
+
+// 0~15 무작위 순열 (Fisher-Yates)
+static void gen_perm(byte perm[16]) {
+	for (int i = 0; i < 16; i++) perm[i] = (byte)i;
+	for (int i = 15; i > 0; i--) {
 		int j = rng_byte() % (i + 1);
 		byte t = perm[i]; perm[i] = perm[j]; perm[j] = t;
 	}
@@ -53,40 +62,18 @@ static void random_delay(void) {
 	byte n = rng_byte() & 0x0F;
 	for (volatile byte k = 0; k < n; k++);
 }
-/* =====================================================================
- *  셔플링 + 더미 적용 연산
- *  16바이트를 독립 처리하는 SubBytes는 처리 순서를 무작위 순열로
- *  바꿔도 결과가 동일 → 시간 축 하이딩(셔플링).
- *  추가로 실수 16개 뒤에 더미 D개를 붙여 통째로 셔플 → 실수 연산의
- *  시간 위치를 (16+D) 구간에 흩뿌림(더미 삽입).
- * ===================================================================== */
-#define NUM_DUMMY   4                     // 더미 개수 (필요시 조절)
-#define SUB_TOTAL   (16 + NUM_DUMMY)      // 확장 크기
-
+// SubBytes / AddRoundKey: 처리 순서만 셔플, 결과는 동일
 void SubBytes(byte state[16]) {
-	byte in_state[SUB_TOTAL];
-	byte out_state[SUB_TOTAL];
-	byte perm[SUB_TOTAL];
-
-	// [1] in state 포문: 앞 16개는 실수, 뒤 NUM_DUMMY개는 더미
-	for (int j = 0; j < 16; j++)         in_state[j] = state[j];
-	for (int j = 16; j < SUB_TOTAL; j++) in_state[j] = rng_byte();
-
-	// 사전연산: 중복 없는 인덱스 순열 (실수+더미 통째로 셔플)
-	gen_perm_n(perm, SUB_TOTAL);
-
-	// [2] sbox 포문: 셔플된 순서대로 접근, 인덱스만 가져와 처리
-	for (int j = 0; j < SUB_TOTAL; j++) {
+	byte perm[16];
+	gen_perm(perm);
+	for (int j = 0; j < 16; j++) {
 		int idx = perm[j];
-		out_state[idx] = sbox[in_state[idx]];
+		state[idx] = sbox[state[idx]];
 	}
-
-	// [3] out state 포문: 실수 16바이트만 반환 (더미는 폐기)
-	for (int j = 0; j < 16; j++) state[j] = out_state[j];
 }
 void AddRoundKey(byte state[16], byte roundKey[16]) {
 	byte perm[16];
-	gen_perm_n(perm, 16);
+	gen_perm(perm);
 	for (int j = 0; j < 16; j++) {
 		int idx = perm[j];
 		state[idx] ^= roundKey[idx];
@@ -137,13 +124,13 @@ void AES_Encrypt(byte input[16], byte roundKeys[11][16]) {
 	AddRoundKey(input, roundKeys[0]);     // [셔플링]
 	for (int round = 1; round <= 9; round++) {
 		random_delay();                   // [시간 축] 라운드마다 오프셋 흔들기
-		SubBytes(input);                  // [셔플링+더미] ← 1라운드 출력이 CPA 주 공격점
+		SubBytes(input);                  // [셔플링] ← 1라운드 출력이 CPA 주 공격점
 		ShiftRows(input);
 		MixColumns(input);
 		AddRoundKey(input, roundKeys[round]); // [셔플링]
 	}
 	random_delay();
-	SubBytes(input);                      // [셔플링+더미] ← 마지막 라운드 공격점
+	SubBytes(input);                      // [셔플링] ← 마지막 라운드 공격점
 	ShiftRows(input);
 	AddRoundKey(input, roundKeys[10]);    // [셔플링]
 }
