@@ -36,17 +36,19 @@ const byte Rcon[10] = {
  *  - random_delay() : 랜덤 딜레이
  */
 
-// 32비트 LFSR. seed는 0이면 안 됨.
+ // 32비트 LFSR. seed는 0이면 안 됨.
 static uint32_t lfsr_state = 0x12345678u;
 
+//ppt 설명
 static byte rng_byte(void) {
 	byte out = 0;
 	for (int i = 0; i < 8; i++) {            // 1비트씩 8번 뽑기
-		uint32_t lsb = lfsr_state & 1u;
-		lfsr_state >>= 1;
-		if (lsb) lfsr_state ^= 0x80200003u;  // 탭 피드백
-		out = (byte)((out << 1) | lsb);
+		uint32_t lsb = lfsr_state & 1u;      // 맨 끝 비트 꺼냄
+		lfsr_state >>= 1;                    // 오른쪽 1칸 시프트
+		if (lsb) lfsr_state ^= 0x80200003u;  // 1이면 피드백 비트 위치에 XOR
+		out = (byte)((out << 1) | lsb);      // 뽑은 비트 모으기
 	}
+	printf("%02x, ", out);
 	return out;
 }
 
@@ -146,6 +148,7 @@ int main() {
 	byte AES_secret_key[11][16];
 	KeyExpansion(key, AES_secret_key);
 	AES_Encrypt(plaintext, AES_secret_key);
+	printf("\n\nCipher Text = ");
 	for (int i = 0; i < 16; i++) printf("%02x ", plaintext[i]);
 	printf("\n");
 	// 기대값: 39 25 84 1d 02 dc 09 fb dc 11 85 97 19 6a 0b 32
