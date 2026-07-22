@@ -7,7 +7,7 @@ typedef uint8_t byte;
 #define AES_KEY_SIZE    16
 #define AES_HIDDEN_SIZE 18  // 16 + 더미 2
 
-// 기약다항식 x^8 + x^4 + x^3 + x + 1 = 0x11b, 하위 8비트
+// 기약다항식 x^8 + x^4 + x^3 + x + 1 = 0x11b
 #define GF_POLY 0x1b
 
 // S-Box
@@ -51,7 +51,7 @@ const byte Rcon[10] = {
 	0x01, 0x02, 0x04, 0x08, 0x10, 0x20, 0x40, 0x80, 0x1b, 0x36
 };
 
-// 32비트 LFSR (0x80200003 = x^32+x^22+x^2+x+1, 기약다항식 확인됨, seed=0 불가)
+// 32비트 LFSR
 static uint32_t lfsr_state = 0x12345678u;
 
 // LFSR로 랜덤 1바이트 생성
@@ -67,7 +67,7 @@ static byte rng_byte(void) {
 	return out;
 }
 
-// Fisher-Yates로 0~17 순열 생성
+// 피셔로 순열 생성
 static void gen_perm_18(byte perm[AES_HIDDEN_SIZE]) {
 	for (int i = 0; i < AES_HIDDEN_SIZE; i++) perm[i] = (byte)i;
 	for (int i = AES_HIDDEN_SIZE - 1; i > 0; i--) {
@@ -114,7 +114,7 @@ void ShiftRows(byte state[16]) {
 	temp = state[3]; state[3] = state[15]; state[15] = state[11]; state[11] = state[7]; state[7] = temp;
 }
 
-// MixColumns 행렬: [[2,3,1,1],[1,2,3,1],[1,1,2,3],[3,1,1,2]]
+// MixColumns 행렬
 void MixColumns(byte state[16]) {
 	byte s0, s1, s2, s3;
 	for (int i = 0; i < 16; i += 4) {
@@ -134,10 +134,10 @@ void KeyExpansion(byte key[16], byte roundKeys[11][16]) {
 		temp[0] = expandedkey[i - 4]; temp[1] = expandedkey[i - 3];
 		temp[2] = expandedkey[i - 2]; temp[3] = expandedkey[i - 1];
 		if (i % 16 == 0) {
-			// RotWord
+			
 			byte t = temp[0];
 			temp[0] = temp[1]; temp[1] = temp[2]; temp[2] = temp[3]; temp[3] = t;
-			// SubWord
+			
 			temp[0] = sbox[temp[0]]; temp[1] = sbox[temp[1]];
 			temp[2] = sbox[temp[2]]; temp[3] = sbox[temp[3]];
 			temp[0] ^= Rcon[(i / 16) - 1];
@@ -194,5 +194,5 @@ int main() {
 	printf("\n\nCipher Text = ");
 	for (int i = 0; i < 16; i++) printf("%02x ", plaintext[i]);
 	printf("\n");
-	// 기댓값: 39 25 84 1d 02 dc 09 fb dc 11 85 97 19 6a 0b 32
+	// 39 25 84 1d 02 dc 09 fb dc 11 85 97 19 6a 0b 32
 }
