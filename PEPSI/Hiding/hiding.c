@@ -1,12 +1,13 @@
 #define _CRT_SECURE_NO_WARNINGS
 #include <stdio.h>
 #include <stdint.h>
+#include <string.h>
 typedef uint8_t byte;
 #define AES_BLOCK_SIZE  16
-#define AES_ROUND_SIZE  16
 #define AES_KEY_SIZE    16
-#define AES_HIDDEN_SIZE 18   // 16 + 더미 2
-// 기약다항식 x^8 + x^4 + x^3 + x + 1 = 0x11b, 하위 8비트만 사용
+#define AES_HIDDEN_SIZE 18  // 16 + 더미 2
+
+// 기약다항식 x^8 + x^4 + x^3 + x + 1 = 0x11b, 하위 8비트
 #define GF_POLY 0x1b
 
 // S-Box
@@ -29,7 +30,7 @@ const byte sbox[256] = {
 	0x8c, 0xa1, 0x89, 0x0d, 0xbf, 0xe6, 0x42, 0x68, 0x41, 0x99, 0x2d, 0x0f, 0xb0, 0x54, 0xbb, 0x16
 };
 
-// GF(2^8) x 곱셈, x^8 초과 시 GF_POLY로 환원
+// GF(2^8) x 곱셈
 static inline byte xtime(byte x) {
 	return (x << 1) ^ (((x >> 7) & 1) * GF_POLY);
 }
@@ -50,7 +51,7 @@ const byte Rcon[10] = {
 	0x01, 0x02, 0x04, 0x08, 0x10, 0x20, 0x40, 0x80, 0x1b, 0x36
 };
 
-// 32비트 LFSR (seed = 0 불가)
+// 32비트 LFSR (0x80200003 = x^32+x^22+x^2+x+1, 기약다항식 확인됨, seed=0 불가)
 static uint32_t lfsr_state = 0x12345678u;
 
 // LFSR로 랜덤 1바이트 생성
@@ -67,32 +68,22 @@ static byte rng_byte(void) {
 }
 
 // Fisher-Yates로 0~17 순열 생성
-// x % 2^n == x & (2^n-1) 적용: (i+1)이 2의 거듭제곱이면 & 사용
 static void gen_perm_18(byte perm[AES_HIDDEN_SIZE]) {
 	for (int i = 0; i < AES_HIDDEN_SIZE; i++) perm[i] = (byte)i;
 	for (int i = AES_HIDDEN_SIZE - 1; i > 0; i--) {
-		int j;
-		if (((i + 1) & i) == 0)
-			j = rng_byte() & i;        // x % 2^n == x & (2^n-1)
-		else
-			j = rng_byte() % (i + 1);
+		int j = rng_byte() % (i + 1);
 		byte t = perm[i]; perm[i] = perm[j]; perm[j] = t;
 	}
 }
 
-// 랜덤 더미 지연 (시간 은닉)
+// 랜덤 더미 지연
 static void random_delay(void) {
 	byte n = rng_byte() & 0x0F;
 	for (volatile byte k = 0; k < n; k++);
 }
 
-// SubBytes: 더미 2개 추가해 18회 처리, 오더 배열 미리 출력 (16개만)
-void SubBytes(byte state[16]) {
-	byte buf[AES_HIDDEN_SIZE];
-	for (int i = 0; i < 16; i++) buf[i] = state[i];
-	buf[16] = rng_byte();  // 더미
-	buf[17] = rng_byte();  // 더미
-
+// SubBytes: 오더 배열 미리 출력(16개), 18회 처리
+void SubBytes(byte in_state[AES_HIDDEN_SIZE], byte out_state[AES_HIDDEN_SIZE]) {
 	byte ls[AES_HIDDEN_SIZE];
 	gen_perm_18(ls);
 
@@ -101,25 +92,16 @@ void SubBytes(byte state[16]) {
 	printf("\n");
 
 	for (int byteIdx = 0; byteIdx < AES_HIDDEN_SIZE; byteIdx++)
-		buf[ls[byteIdx]] = sbox[buf[ls[byteIdx]]];
-
-	for (int i = 0; i < 16; i++) state[i] = buf[i];
+		out_state[ls[byteIdx]] = sbox[in_state[ls[byteIdx]]];
 }
 
-// AddRoundKey: 더미 2개 추가해 18회 XOR
-void AddRoundKey(byte state[16], byte rk[16]) {
-	byte s_buf[AES_HIDDEN_SIZE], rk_buf[AES_HIDDEN_SIZE];
-	for (int i = 0; i < 16; i++) { s_buf[i] = state[i]; rk_buf[i] = rk[i]; }
-	s_buf[16] = rng_byte();  rk_buf[16] = rng_byte();  // 더미
-	s_buf[17] = rng_byte();  rk_buf[17] = rng_byte();  // 더미
-
+// AddRoundKey: 18회 XOR
+void AddRoundKey(byte in_state[AES_HIDDEN_SIZE], byte rk[AES_HIDDEN_SIZE], byte out_state[AES_HIDDEN_SIZE]) {
 	byte ls[AES_HIDDEN_SIZE];
 	gen_perm_18(ls);
 
 	for (int byteIdx = 0; byteIdx < AES_HIDDEN_SIZE; byteIdx++)
-		s_buf[ls[byteIdx]] = s_buf[ls[byteIdx]] ^ rk_buf[ls[byteIdx]];
-
-	for (int i = 0; i < 16; i++) state[i] = s_buf[i];
+		out_state[ls[byteIdx]] = in_state[ls[byteIdx]] ^ rk[ls[byteIdx]];
 }
 
 // ShiftRows / MixColumns / KeyExpansion: 표준 구현
@@ -149,10 +131,8 @@ void KeyExpansion(byte key[16], byte roundKeys[11][16]) {
 	byte temp[4];
 	for (int i = 0; i < 16; i++) expandedkey[i] = key[i];
 	for (int i = 16; i < 176; i += 4) {
-		temp[0] = expandedkey[i - 4];
-		temp[1] = expandedkey[i - 3];
-		temp[2] = expandedkey[i - 2];
-		temp[3] = expandedkey[i - 1];
+		temp[0] = expandedkey[i - 4]; temp[1] = expandedkey[i - 3];
+		temp[2] = expandedkey[i - 2]; temp[3] = expandedkey[i - 1];
 		if (i % 16 == 0) {
 			// RotWord
 			byte t = temp[0];
@@ -169,22 +149,28 @@ void KeyExpansion(byte key[16], byte roundKeys[11][16]) {
 	}
 }
 
-void AES_Encrypt(byte input[16], byte roundKeys[11][16]) {
+// AES_Encrypt: state[18] 직접 사용, 라운드 키를 18바이트로 확장 후 전달
+void AES_Encrypt(byte state[AES_HIDDEN_SIZE], byte roundKeys[11][16]) {
+	byte rk[AES_HIDDEN_SIZE];
+
 	random_delay();
-	AddRoundKey(input, roundKeys[0]);
+	memcpy(rk, roundKeys[0], 16); rk[16] = rng_byte(); rk[17] = rng_byte();
+	AddRoundKey(state, rk, state);
 
 	for (int round = 1; round <= 9; round++) {
 		random_delay();
-		SubBytes(input);
-		ShiftRows(input);
-		MixColumns(input);
-		AddRoundKey(input, roundKeys[round]);
+		SubBytes(state, state);
+		ShiftRows(state);
+		MixColumns(state);
+		memcpy(rk, roundKeys[round], 16); rk[16] = rng_byte(); rk[17] = rng_byte();
+		AddRoundKey(state, rk, state);
 	}
 
 	random_delay();
-	SubBytes(input);
-	ShiftRows(input);
-	AddRoundKey(input, roundKeys[10]);
+	SubBytes(state, state);
+	ShiftRows(state);
+	memcpy(rk, roundKeys[10], 16); rk[16] = rng_byte(); rk[17] = rng_byte();
+	AddRoundKey(state, rk, state);
 }
 
 int main() {
@@ -192,13 +178,19 @@ int main() {
 		0x2b, 0x7e, 0x15, 0x16, 0x28, 0xae, 0xd2, 0xa6,
 		0xab, 0xf7, 0x15, 0x88, 0x09, 0xcf, 0x4f, 0x3c
 	};
-	byte plaintext[16] = {
+	// state를 18바이트로 정의, 마지막 2바이트에 더미 채우기
+	byte plaintext[AES_HIDDEN_SIZE] = {
 		0x32, 0x43, 0xf6, 0xa8, 0x88, 0x5a, 0x30, 0x8d,
-		0x31, 0x31, 0x98, 0xa2, 0xe0, 0x37, 0x07, 0x34
+		0x31, 0x31, 0x98, 0xa2, 0xe0, 0x37, 0x07, 0x34,
+		0x00, 0x00
 	};
+	plaintext[16] = rng_byte();
+	plaintext[17] = rng_byte();
+
 	byte AES_secret_key[11][16];
 	KeyExpansion(key, AES_secret_key);
 	AES_Encrypt(plaintext, AES_secret_key);
+
 	printf("\n\nCipher Text = ");
 	for (int i = 0; i < 16; i++) printf("%02x ", plaintext[i]);
 	printf("\n");
