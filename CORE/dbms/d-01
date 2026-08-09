@@ -1,0 +1,53 @@
+import os
+from pymongo import MongoClient
+from pymongo.errors import PyMongoError
+
+URI = os.environ.get("MONGO_URI", "mongodb://localhost:27017")
+
+
+def check():
+    result = {
+        "code": "D-01",
+        "title": "기본 계정의 비밀번호·정책 변경",
+        "status": "N/A",
+        "detail": "",
+    }
+
+    try:
+        client = MongoClient(URI, serverSelectionTimeoutMS=3000)
+        client.admin.command("ping")
+    except PyMongoError as e:
+        result["detail"] = f"MongoDB 접속 실패로 점검 불가: {e}"
+        return result
+
+    try:
+        parsed = client.admin.command("getCmdLineOpts").get("parsed", {})
+        auth = parsed.get("security", {}).get("authorization", "disabled")
+    except PyMongoError as e:
+        result["detail"] = f"설정 조회 실패: {e}"
+        return result
+
+    if auth != "enabled":
+        result["status"] = "취약"
+        result["detail"] = "인증(security.authorization) 비활성화 → 누구나 관리자 권한 접속 가능"
+        return result
+
+    guessable = {"admin", "root", "test", "mongo", "mongodb", "sa"}
+    admin_roles = {"root", "dbOwner", "userAdminAnyDatabase", "clusterAdmin"}
+    found = []
+    try:
+        for u in client.admin.command("usersInfo").get("users", []):
+            roles = {r.get("role") for r in u.get("roles", [])}
+            if u.get("user", "").lower() in guessable and (roles & admin_roles):
+                found.append(u["user"])
+    except PyMongoError:
+        found = None
+
+    if found:
+        result["status"] = "취약"
+        result["detail"] = f"예측 가능한 관리자 계정명 사용: {', '.join(found)}"
+    else:
+        result["status"] = "양호"
+        result["detail"] = "인증 활성화 + 예측 가능한 기본 계정 없음"
+
+    return result
