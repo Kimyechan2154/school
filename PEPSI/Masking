@@ -13,10 +13,10 @@ typedef uint8_t byte; //8비트 부호없는 정수형을 byte로 정의
 
 
 //랜덤 값인 m, m' 설정
-void rand_num(byte* m, byte* m_prime) { 
-	
-	*m = rand() % 256;
-	*m_prime = rand() % 256;
+void rand_num(byte* m, byte* m_prime) {
+
+	*m = rand() & 0xFF;
+	*m_prime = rand() & 0xFF;
 }
 
 
@@ -41,10 +41,12 @@ const byte sbox[256] = {
 	0x8c, 0xa1, 0x89, 0x0d, 0xbf, 0xe6, 0x42, 0x68, 0x41, 0x99, 0x2d, 0x0f, 0xb0, 0x54, 0xbb, 0x16
 };
 
-void M_MSbox(byte MSbox[256], byte m, byte m_prime) {
+byte MSbox[256];
 
-	for (int i = 0; i < 256; i++) {
-		MSbox[i ^ m] = sbox[i] ^ m_prime;
+void M_MSbox(byte m, byte m_prime) {
+
+	for (int byte_idx = 0; byte_idx < 256; byte_idx++) {
+		MSbox[byte_idx ^ m] = sbox[byte_idx] ^ m_prime;
 	}
 }
 
@@ -73,7 +75,7 @@ void SubBytes(byte state[16]) {
 	}
 }
 
-void M_SubBytes(byte state[16], const byte MSbox[256]) {//값을 변경하지 않고 MSbox를 불러옴
+void M_SubBytes(byte state[16]) {//값을 변경하지 않고 MSbox를 불러옴
 
 	for (int byte_idx = 0; byte_idx < AES_BLOCK_SIZE; byte_idx++)
 	{
@@ -83,7 +85,7 @@ void M_SubBytes(byte state[16], const byte MSbox[256]) {//값을 변경하지 �
 
 
 void ShiftRows(byte state[16]) {
-	
+
 	byte temp;
 	// 2번째 행 시프트
 	temp = state[1];
@@ -124,7 +126,7 @@ void KeyExpansion(byte key[16], byte roundKeys[11][16]) {
 	byte* expandedkey = (byte*)roundKeys;
 	byte temp[4];
 
-	
+
 	for (int i = 0; i < 16; i++) {
 		expandedkey[i] = key[i];
 	}
@@ -148,7 +150,7 @@ void KeyExpansion(byte key[16], byte roundKeys[11][16]) {
 			temp[2] = sbox[temp[2]];
 			temp[3] = sbox[temp[3]];
 
-			temp[0] ^= Rcon[(i / 16)-1]; //Rcon 상수 더하기 + 피드백
+			temp[0] ^= Rcon[(i / 16) - 1]; //Rcon 상수 더하기 + 피드백
 		}
 
 		//최종 계산 및 저장
@@ -165,7 +167,7 @@ void AddRoundKey(byte state[16], byte roundKey[16]) {
 	}
 }
 
-void AES_Encrypt(byte input[16], byte roundKeys[11][16]) {
+void AES_Encrypt(byte input[16], byte roundKeys[11][16], byte m, byte m_prime) {
 
 	AddRoundKey(input, roundKeys[0]); // 초기 라운드 키 추가
 
@@ -174,10 +176,20 @@ void AES_Encrypt(byte input[16], byte roundKeys[11][16]) {
 		ShiftRows(input);
 		MixColumns(input); // 10라운드 까지만
 		AddRoundKey(input, roundKeys[round]);
+
+		//m' 마스크를 m 마스크로 다시 바꾼다
+		for (int byte_idx = 0; byte_idx < AES_BLOCK_SIZE; byte_idx++) {
+			input[byte_idx] ^= m_prime ^ m; 
+		}
 	}
 	M_SubBytes(input);
 	ShiftRows(input);
 	AddRoundKey(input, roundKeys[10]); // 마지막 라운드 키 추가
+	
+	//m'제거
+	for (int byte_idx = 0; byte_idx < AES_BLOCK_SIZE; byte_idx++) {
+		input[byte_idx] ^= m_prime; 
+	}
 } // xtime 함수 구현 // 믹스컬럼 f함수 구현 끝 결과값 키스케쥴 확인 암호문 확인
 
 int main() {
@@ -205,19 +217,17 @@ int main() {
 		state[i] = plaintext[i] ^ m;
 	}
 
-	byte MSbox[256];
-
-	M_MSbox(MSbox, m, m_prime);
+	M_MSbox(m, m_prime);
 
 
 	byte AES_secret_key[11][16]; //AES 키 생성
 
 	KeyExpansion(key, AES_secret_key); //키 세팅
 
-	AES_Encrypt(plaintext, AES_secret_key); //평문 ->암호문 변환
+	AES_Encrypt(state, AES_secret_key, m, m_prime); //평문 ->암호문 변환
 
 	for (int i = 0; i < 16; i++) {
-		printf("%02x ", plaintext[i]);
+		printf("%02x ", state[i]);
 	} //결과 출력
 	printf("\n");
 }
